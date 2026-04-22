@@ -273,7 +273,7 @@ local Button3 = Tab:CreateButton({
             Image = "badge-check",
         })
         wait(2)
-   loadstring(game:HttpGet("https://raw.githubusercontent.com/Cap4Teen4/RemoteSpy/refs/heads/main/RemoteSpy"))()
+   loadstring(game:HttpGet("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/Key/RemoteSpy"))()
    end,
 })
 Button3:Set("Remote Spy v1")
