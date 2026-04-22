@@ -1,5 +1,6 @@
 --// Theme (Coffee / Gold)
-local CoffeeTheme = {
+return {
+    Coffee = {
     -- TEXT
     TextColor = Color3.fromRGB(245, 225, 190),
     PlaceholderColor = Color3.fromRGB(140, 120, 95),
@@ -44,5 +45,10 @@ local CoffeeTheme = {
     -- DROPDOWNS
     DropdownSelected = Color3.fromRGB(45, 25, 12),
     DropdownUnselected = Color3.fromRGB(30, 18, 10),
+    },
 
-    
+    Dark = {
+        TextColor = Color3.fromRGB(255,255,255),
+        Background = Color3.fromRGB(20,20,20),
+        -- etc...
+    }
