@@ -469,6 +469,7 @@ Tabs.Teles:AddButton({
             game.JobId,
             player
         )
+        
     end
 })
 
@@ -722,9 +723,12 @@ Tabs.Settings:AddSection("Server Settings")
 Tabs.Settings:AddButton({
     Title = "♻️Reload Hub",
     Callback = function()
+        Notify("Destroying Current Hub", "Reloading World Zero Hub...")
+        task.wait(1)
+        Fluent:Destroy()
         Notify("Reloading Hub", "Reloading World Zero Hub...")
         task.wait(1)
-        safeLoad("https://raw.githubusercontent.com/Cap4Teen4/WZ-Hub/refs/heads/Hub/WZLauncher.lua", "World Zero Hub")
+        safeLoad("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WZ%20Hub%20v4", "World Zero Hub")
     end
 })
 Tabs.Settings:AddButton({
@@ -740,19 +744,7 @@ Tabs.Settings:AddParagraph({
     Title = "World Zero 🚀 Hub v.4.2",
     Content = "Made by 42Oreobun"
 })
-Tabs.Settings:AddToggle("AutoExecute", {
-    Title = "⚡ Auto‑Execute Hub on Join",
-    Default = false,
-    Callback = function(state)
-        SaveManager:SetAutoLoad(state)
-        
-        if state then
-            Notify("Auto‑Execute Enabled", "The hub will now auto‑load when you rejoin or change worlds.")
-        else
-            Notify("Auto‑Execute Disabled", "The hub will no longer auto‑load automatically.")
-        end
-    end
-})
+
 
 ---------------------------------------------------------
 -- SAVE MANAGER + INTERFACE MANAGER
@@ -780,6 +772,4 @@ Fluent:Notify({
     Duration = 10
 })
 
-SaveManager:LoadAutoloadConfig({
-
-})
+SaveManager:LoadAutoloadConfig({})
