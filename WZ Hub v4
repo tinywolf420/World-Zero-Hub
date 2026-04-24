@@ -1227,49 +1227,6 @@ Tabs.Settings:AddParagraph({
     Content = "Made by 42Oreobun"
 })
 
-local AUTOEXEC_PATH = "C:/Users/" .. (getgenv().USERNAME or "Brandon") .. "/AppData/Local/Xeno/autoexec/WorldZeroHub.lua"
-
-local AUTOEXEC_CONTENT = [[
-loadstring(game:HttpGet("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WZ%20Hub%20v4"))()
-]]
-
-local function AutoExecInstalled()
-    return isfile and isfile(AUTOEXEC_PATH)
-end
-
-local AutoExecSection = Tabs.Settings:AddSection("Auto‑Exec Setup Wizard")
-
-local StatusLabel = AutoExecSection:AddParagraph({
-    Title = "Checking Auto‑Exec...",
-    Content = "Please wait..."
-})
-
-task.delay(0.15, function()
-    if AutoExecInstalled() then
-        StatusLabel:SetTitle("🟩 Auto‑Exec Installed")
-        StatusLabel:SetContent("Your hub will auto‑load every time you join World Zero.")
-    else
-        StatusLabel:SetTitle("🟥 Auto‑Exec Not Installed")
-        StatusLabel:SetContent("Place the auto‑exec file in the Xeno folder to enable auto‑loading.")
-    end
-end)
-
-AutoExecSection:AddButton({
-    Title = "📄 Copy Auto‑Exec Script",
-    Description = "Copies the required loadstring to your clipboard.",
-    Callback = function()
-        setclipboard(AUTOEXEC_CONTENT)
-        Notify("Copied!", "Paste this into a new file inside Xeno’s autoexec folder.")
-    end
-})
-
-AutoExecSection:AddButton({
-    Title = "📁 Show Installation Path",
-    Description = "Displays the exact folder where the file must be placed.",
-    Callback = function()
-        Notify("Auto‑Exec Folder", AUTOEXEC_PATH)
-    end
-})
 
 ---------------------------------------------------------
 -- SAVE MANAGER + INTERFACE MANAGER
