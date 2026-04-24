@@ -448,7 +448,7 @@ Tabs.Teles:AddButton({
             ReplicatedStorage.Remotes.SetMounted:FireServer(true)
             task.wait(0.25)
             hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.55)
+            task.wait(0.75)
             ReplicatedStorage.Remotes.SetMounted:FireServer(false)
         else
             Notify("No Rings", "No World_Teleport rings found under MenuRings.World_Teleport.Ring.")
@@ -614,6 +614,10 @@ end
 ---------------------------------------------------------
 
 Tabs.Teles:AddSection("Interactive Rings")
+Tabs.Teles:AddParagraph({
+    Title = "⚠️ Warning",
+    Content = "‼️ Auto uses Mount To Not Die when Teleporting✅ ‼️ \nPossible to still Die tho.."
+})
 Tabs.Teles:AddButton({
     Title = "🚪Dungeon Portals",
     Callback = function()
@@ -649,7 +653,7 @@ Tabs.Teles:AddButton({
             ReplicatedStorage.Remotes.SetMounted:FireServer(true)
             task.wait(0.25)
             hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.55)
+            task.wait(0.75)
             ReplicatedStorage.Remotes.SetMounted:FireServer(false)
         else
             Notify("No Rings", "No Dungeon_Station rings found under MenuRings.Dungeon_Station.Ring.")
@@ -691,7 +695,7 @@ Tabs.Teles:AddButton({
             ReplicatedStorage.Remotes.SetMounted:FireServer(true)
             task.wait(0.25)
             hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.55)
+            task.wait(0.75)
             ReplicatedStorage.Remotes.SetMounted:FireServer(false)
         else
             Notify("No Rings", "No bank rings found under MenuRings.Bank.Ring.")
@@ -733,7 +737,7 @@ Tabs.Teles:AddButton({
             ReplicatedStorage.Remotes.SetMounted:FireServer(true)
             task.wait(0.25)
             hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.55)
+            task.wait(0.75)
             ReplicatedStorage.Remotes.SetMounted:FireServer(false)
         else
             Notify("No Rings", "No Sell rings found under MenuRings.Sell.Ring.")
@@ -775,7 +779,7 @@ Tabs.Teles:AddButton({
             ReplicatedStorage.Remotes.SetMounted:FireServer(true)
             task.wait(0.25)
             hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.55)
+            task.wait(0.75)
             ReplicatedStorage.Remotes.SetMounted:FireServer(false)
         else
             Notify("No Rings", "No Upgrade rings found under MenuRings.Upgrade.Ring.")
@@ -817,16 +821,57 @@ Tabs.Teles:AddButton({
             ReplicatedStorage.Remotes.SetMounted:FireServer(true)
             task.wait(0.25)
             hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.55)
+            task.wait(0.75)
             ReplicatedStorage.Remotes.SetMounted:FireServer(false)
         else
             Notify("No Rings", "No EggShop rings found under MenuRings.EggShop.Ring.")
         end
     end
 })
+Tabs.Teles:AddButton({
+    Title = "🎁 Aura Chest",
+    Callback = function()
+        local menuRings = workspace:FindFirstChild("MenuRings")
+        local AuraChest = menuRings and menuRings:FindFirstChild("AuraChest")
 
+        if not AuraChest then
+            Notify("Bank Not Found", "MenuRings.AuraChest.Ring not found in Workspace.")
+            return
+        end
 
----------------------------------------------------------Dungeon_Station
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            Notify("Error", "Character not loaded.")
+            return
+        end
+
+        local nearest, dist = nil, math.huge
+
+        for _, ring in ipairs(AuraChest:GetChildren()) do
+            if ring:IsA("BasePart") then
+                local d = (hrp.Position - ring.Position).Magnitude
+                if d < dist then
+                    dist = d
+                    nearest = ring
+                end
+            end
+        end
+
+        if nearest then
+            Notify("Teleporting", "Teleporting to nearest AuraChest...")
+            ReplicatedStorage.Remotes.SetMounted:FireServer(true)
+            task.wait(0.25)
+            hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
+            task.wait(0.75)
+            ReplicatedStorage.Remotes.SetMounted:FireServer(false)
+        else
+            Notify("No Rings", "No AuraChest rings found under MenuRings.AuraChest.Ring.")
+        end
+    end
+})
+
+---------------------------------------------------------
 -- EVENTS TAB (EggHunt Teleport List) – SAFE
 ---------------------------------------------------------
 Tabs.Events:AddSection("Event Interactive Ring Teleport")
@@ -865,10 +910,52 @@ Tabs.Events:AddButton({
             ReplicatedStorage.Remotes.SetMounted:FireServer(true)
             task.wait(0.25)
             hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.55)
+            task.wait(0.75)
             ReplicatedStorage.Remotes.SetMounted:FireServer(false)
         else
             Notify("No Rings", "No EventPortal rings found under MenuRings.EventPortal.Ring.")
+        end
+    end
+})
+Tabs.Events:AddButton({
+    Title = "🏪 Easter Booth 🐰",
+    Callback = function()
+        local menuRings = workspace:FindFirstChild("MenuRings")
+        local Booth_Easter_Event = menuRings and menuRings:FindFirstChild("Booth_Easter_Event")
+
+        if not Booth_Easter_Event then
+            Notify("Bank Not Found", "MenuRings.Booth_Easter_Event.Ring not found in Workspace.")
+            return
+        end
+
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            Notify("Error", "Character not loaded.")
+            return
+        end
+
+        local nearest, dist = nil, math.huge
+
+        for _, ring in ipairs(Booth_Easter_Event:GetChildren()) do
+            if ring:IsA("BasePart") then
+                local d = (hrp.Position - ring.Position).Magnitude
+                if d < dist then
+                    dist = d
+                    nearest = ring
+                end
+            end
+        end
+
+        if nearest then
+            Notify("Teleporting", "Teleporting to nearest Booth_Easter_Event...")
+            ReplicatedStorage.Remotes.SetMounted:FireServer(true)
+            task.wait(0.25)
+            hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
+            task.wait(0.75)
+            ReplicatedStorage.Remotes.SetMounted:FireServer(false)
+        else
+            Notify("No Rings", "No Booth_Easter_Event rings found under MenuRings.Booth_Easter_Event.Ring.")
         end
     end
 })
@@ -1120,10 +1207,11 @@ Tabs.Settings:AddButton({
     Title = "♻️Reload Hub",
     Callback = function()
         Notify("Destroying Current Hub", "Reloading World Zero Hub...")
-        task.wait(1)
-        Fluent:Destroy()
+        task.wait(3)
         Notify("Reloading Hub", "Reloading World Zero Hub...")
-        task.wait(1)
+        task.wait(3)
+        Fluent:Destroy()
+        task.wait(2)
         safeLoad("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WZ%20Hub%20v4", "World Zero Hub")
     end
 })
