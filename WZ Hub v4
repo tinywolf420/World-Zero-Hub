@@ -1204,7 +1204,7 @@ end
 Tabs.Settings:AddSection("Server Settings")
 
 Tabs.Settings:AddButton({
-    Title = "♻️Reload Hub",
+    Title = "♻️Reload Hub (3 Second Delay)",
     Callback = function()
         Notify("Destroying Current Hub", "Reloading World Zero Hub...")
         task.wait(3)
