@@ -402,11 +402,9 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
----------------------------------------------------------
--- MAIN TAB
----------------------------------------------------------
+
 Tabs.Main:AddSection("Skill Scheduler")
--- (You can add your skill scheduler stuff here later)
+
 
 ---------------------------------------------------------
 -- TELEPORT TAB
