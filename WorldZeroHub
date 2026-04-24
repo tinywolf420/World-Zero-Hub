@@ -1210,7 +1210,7 @@ Tabs.Settings:AddButton({
         task.wait(3)
         Fluent:Destroy()
         task.wait(2)
-        safeLoad("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WZHUB", "World Zero Hub")
+        safeLoad("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WorldZeroHub", "World Zero Hub")
     end
 })
 Tabs.Settings:AddButton({
