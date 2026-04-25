@@ -11,11 +11,14 @@ local TeleportService = game:GetService("TeleportService")
 local Debris = game:GetService("Debris")
 local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
+local VIM = game:GetService("VirtualInputManager")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 
-getgenv().kill = false
+getgenv().Attack = false
+getgenv().autoSkills = false
+getgenv().killAura = false
 
 --// Load Fluent + Addons
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -403,7 +406,125 @@ RunService.RenderStepped:Connect(function()
 end)
 
 
-Tabs.Main:AddSection("Skill Scheduler")
+
+local function clickLoop()
+    task.spawn(function()
+        while getgenv().kill do
+            VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+            VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+            task.wait(0.1)
+        end
+    end)
+end
+
+local function setKill(state)
+    getgenv().kill = state
+    if state then
+        clickLoop()
+    end
+end
+
+local skillThread = nil
+
+local skills = {
+    {key = Enum.KeyCode.E, delay = 1.0, lastUsed = 0},
+    {key = Enum.KeyCode.R, delay = 1.0, lastUsed = 0},
+    {key = Enum.KeyCode.F, delay = 1.0, lastUsed = 0},
+    {key = Enum.KeyCode.X, delay = 3.0, lastUsed = 0},
+    {key = Enum.KeyCode.One, delay = 0.5, lastUsed = 0},
+}
+
+local function pressKey(key)
+    VIM:SendKeyEvent(true, key, false, game)
+    VIM:SendKeyEvent(false, key, false, game)
+end
+
+local function SkillLoop()
+    -- جلوگیری از چند بار اجرا شدن
+    if skillThread then return end
+
+    skillThread = task.spawn(function()
+        while getgenv().autoSkills do
+            local now = tick()
+
+            for _, skill in ipairs(skills) do
+                if now - skill.lastUsed >= skill.delay then
+                    pressKey(skill.key)
+                    skill.lastUsed = now
+                end
+            end
+
+            task.wait(0.05)
+        end
+
+        -- reset thread when stopped
+        skillThread = nil
+    end)
+end
+
+local function SkillKill(state)
+    getgenv().kill = state
+    if state then
+        SkillLoop()
+    end
+end
+
+---------------------------------------------------------
+-- SCRIPT END ^^^^^^ NOTHGING BETWEEN vvvvvv
+---------------------------------------------------------
+---------------------------------------------------------
+-- TELEPORT TAB (your section stays clean)
+---------------------------------------------------------
+Tabs.Main:AddSection("🛫World Teleports🛬")
+-- Create the toggle FIRST
+local killToggle = Tabs.Main:AddToggle("KillToggle", {
+    Title = "Auto Attack ⚠️(Do Not Need To Click This Use Keybind)⚠️",
+    Default = false,
+    Callback = function(state)
+        setKill(state)
+    end
+})
+
+local KillKeybind = Tabs.Main:AddKeybind("KillKeybind", {
+    Title = "Auto Attack Keybind",
+    Mode = "Toggle",
+    Default = "Nine",
+
+    Callback = function(Value)
+        killToggle:SetValue(Value) -- FIXED
+    end,
+
+    ChangedCallback = function(New)
+        print("Kill keybind changed!", New)
+    end
+})
+
+local skillToggle = Tabs.Main:AddToggle("SkillToggle", {
+    Title = "Auto Skills ⚠️(Do Not Need To Click This Use Keybind)⚠️",
+    Default = false,
+    Callback = function(state)
+        getgenv().autoSkills = state
+        if state then SkillLoop() end
+    end
+})
+
+local skillKeybind = Tabs.Main:AddKeybind("SkillKeybind", {
+    Title = "Auto Skills Keybind",
+    Mode = "Toggle",
+    Default = "Eight",
+    Callback = function(v)
+        skillToggle:SetValue(v)
+    end
+})
+
+KillKeybind:OnClick(function()
+    print("Kill keybind clicked:", KillKeybind:GetState())
+end)
+
+KillKeybind:OnChanged(function()
+    print("Kill keybind changed:", KillKeybind.Value)
+end)
+
 
 
 ---------------------------------------------------------
