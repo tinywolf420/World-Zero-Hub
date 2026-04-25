@@ -652,7 +652,15 @@ for _, group in ipairs(grouped) do
                     if w.id then
                         Notify("Teleporting", "Teleporting to " .. w.name)
                         task.wait(2)
+                        Notify("Destroying Current Hub", "Reloading World Zero Hub...")
+                        task.wait(3)
+                        Notify("Reloading Hub", "Reloading World Zero Hub...")
+                        task.wait(3)
+                        Fluent:Destroy()
+
                         ReplicatedStorage.Shared.Teleport.TeleportToHub:FireServer(w.id)
+
+                        safeLoad("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WorldZeroHub", "World Zero Hub")-- UHHH
                     else
                         Notify("No Teleport ID", w.name .. " has no teleport ID")
                     end
@@ -662,20 +670,6 @@ for _, group in ipairs(grouped) do
     })
 end
 
-Tabs.Teles:AddButton({
-    Title = "World Zero Reconnection ♻️",
-    Callback = function()
-        Notify("Reconnecting Inproccess..", "Rejoining World Zero GameID:2727067538")
-        task.wait(2)
-
-        TeleportService:TeleportToPlaceInstance(
-            game.PlaceId,
-            game.JobId,
-            player
-        )
-        
-    end
-})
 ---------------------------------------------------------
 -- WAYSTONES TELEPORT SYSTEM
 ---------------------------------------------------------
@@ -1207,7 +1201,20 @@ end
 -- SETTINGS TAB
 ---------------------------------------------------------
 Tabs.Settings:AddSection("Server Settings")
+Tabs.Settings:AddButton({
+    Title = "World Zero Reconnection ♻️",
+    Callback = function()
+        Notify("Reconnecting Inproccess..", "Rejoining World Zero GameID:2727067538")
+        task.wait(2)
 
+        TeleportService:TeleportToPlaceInstance(
+            game.PlaceId,
+            game.JobId,
+            player
+        )
+
+    end
+})
 Tabs.Settings:AddButton({
     Title = "♻️Reload Hub (3 Second Delay)",
     Callback = function()
@@ -1238,8 +1245,6 @@ Tabs.Settings:AddParagraph({
 -- SETTINGS TAB — AUTO EXECUTE TOGGLE
 ---------------------------------------------------------
 
-
-
 Tabs.Settings:AddSection("⚙️ Script Behavior")
 ---------------------------------------------------------
 -- SAVE MANAGER + INTERFACE MANAGER
@@ -1259,13 +1264,13 @@ Window:SelectTab(1)
 Fluent:Notify({
     Title = "Loaded successfully.",
     Content = "World Zero LauncherLoaded successfully.",
-    Duration = 10
+    Duration = 5
 })
 task.wait(5)
 Fluent:Notify({
     Title = "Much Love From 42Oreobun, Thank you for the Support",
     Content = "Thank you for the Support! <3",
-    Duration = 10
+    Duration = 5
 })
 
 SaveManager:LoadAutoloadConfig({})
