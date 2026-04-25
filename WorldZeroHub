@@ -467,15 +467,15 @@ local function SkillKill(state)
     if state then
         SkillLoop()
     end
-end
+end -- ← THIS WAS MISSING
 
 ---------------------------------------------------------
 -- SCRIPT END ^^^^^^ NOTHGING BETWEEN vvvvvv
 ---------------------------------------------------------
 ---------------------------------------------------------
--- TELEPORT TAB (your section stays clean)
+-- MAIN TAB (your section stays clean)
 ---------------------------------------------------------
-Tabs.Main:AddSection("🛫World Teleports🛬")
+Tabs.Main:AddSection("⚔️ Combat 🛡️")
 -- Create the toggle FIRST
 local killToggle = Tabs.Main:AddToggle("KillToggle", {
     Title = "Auto Attack ⚠️(Do Not Need To Click This Use Keybind)⚠️",
@@ -524,6 +524,57 @@ end)
 KillKeybind:OnChanged(function()
     print("Kill keybind changed:", KillKeybind.Value)
 end)
+Tabs.Main:AddSection("🔮 Misc 🔮")
+-- PROMO CODE INPUT
+local PromoInput = Tabs.Main:AddInput("PromoInput", {
+    Title = "Promo Code",
+    Default = "",
+    Placeholder = "Enter Promo Code...",
+    Numeric = false,
+    Finished = false, -- if true, only triggers on Enter
+    Callback = function(Value)
+        print("Promo code typed:", Value)
+    end
+})
+
+PromoInput:OnChanged(function()
+    print("Promo code updated:", PromoInput.Value)
+end)
+
+Tabs.Main:AddButton({
+    Title = "Redeem Promo Code",
+    Callback = function()
+        local code = PromoInput.Value
+
+        if code == "" then
+            print("No promo code entered.")
+            return
+        end
+
+        print("Redeeming promo code:", code)
+
+        local remote = game:GetService("ReplicatedStorage")
+            .Shared
+            .PromoCodes
+            .RedeemCode
+
+        remote:InvokeServer("RedeemCode", code)
+
+    end
+})
+
+local function getSellList()
+    local sellList = {}
+
+    for _, item in ipairs(InventoryManager.Items) do
+        if not InventoryManager:IsProtected(item.Rank) and item.Id then
+            table.insert(sellList, item.Id)
+        end
+    end
+
+    return sellList
+end
+
 
 
 
