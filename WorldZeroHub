@@ -20,6 +20,7 @@ getgenv().Attack = false
 getgenv().autoSkills = false
 getgenv().killAura = false
 
+
 --// Load Fluent + Addons
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
@@ -469,6 +470,8 @@ local function SkillKill(state)
     end
 end -- ← THIS WAS MISSING
 
+
+
 ---------------------------------------------------------
 -- SCRIPT END ^^^^^^ NOTHGING BETWEEN vvvvvv
 ---------------------------------------------------------
@@ -562,18 +565,6 @@ Tabs.Main:AddButton({
 
     end
 })
-
-local function getSellList()
-    local sellList = {}
-
-    for _, item in ipairs(InventoryManager.Items) do
-        if not InventoryManager:IsProtected(item.Rank) and item.Id then
-            table.insert(sellList, item.Id)
-        end
-    end
-
-    return sellList
-end
 
 
 
@@ -1399,7 +1390,13 @@ Tabs.Settings:AddParagraph({
     Content = "Made by 42Oreobun"
 })
 
+---------------------------------------------------------
+-- SETTINGS TAB — AUTO EXECUTE TOGGLE
+---------------------------------------------------------
 
+
+
+Tabs.Settings:AddSection("⚙️ Script Behavior")
 ---------------------------------------------------------
 -- SAVE MANAGER + INTERFACE MANAGER
 ---------------------------------------------------------
@@ -1413,6 +1410,7 @@ InterfaceManager:BuildInterfaceSection(Tabs.Settings)
 SaveManager:BuildConfigSection(Tabs.Settings)
 
 Window:SelectTab(1)
+
 
 Fluent:Notify({
     Title = "Loaded successfully.",
