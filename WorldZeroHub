@@ -37,7 +37,7 @@ task.wait(4)
 
 --// Window
 local Window = Fluent:CreateWindow({
-    Title = "World Zero 🚀 Hub v.4.2 |",
+    Title = "World Zero 🚀 Hub v1.4.2 |",
     SubTitle = "Fluent Version:  " .. Fluent.Version,
     TabWidth = 160,
     Size = UDim2.fromOffset(650, 580),
@@ -774,260 +774,104 @@ end
 -- BANK TAB
 ---------------------------------------------------------
 
-Tabs.Teles:AddSection("Interactive Rings")
+Tabs.Teles:AddSection("⭕ Interactive Rings")
 Tabs.Teles:AddParagraph({
     Title = "⚠️ Warning",
-    Content = "‼️ Auto uses Mount To Not Die when Teleporting✅ ‼️ \nPossible to still Die tho.."
+    Content = "‼️ Auto uses Mount To Not Die when Teleporting✅ ‼️ \nPossible to still Die tho.. "
 })
-Tabs.Teles:AddButton({
-    Title = "🚪Dungeon Portals",
-    Callback = function()
-        local menuRings = workspace:FindFirstChild("MenuRings")
-        local Dungeon_Station = menuRings and menuRings:FindFirstChild("Dungeon_Station")
+local function TeleportToRing(ringName, displayName)
+    local menuRings = workspace:FindFirstChild("MenuRings")
+    local folder = menuRings and menuRings:FindFirstChild(ringName)
 
-        if not Dungeon_Station then
-            Notify("Bank Not Found", "MenuRings.Dungeon_Station.Ring not found in Workspace.")
-            return
-        end
+    if not folder then
+        Notify("Not Found", "MenuRings." .. ringName .. " not found.")
+        return
+    end
 
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            Notify("Error", "Character not loaded.")
-            return
-        end
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        Notify("Error", "Character not loaded.")
+        return
+    end
 
-        local nearest, dist = nil, math.huge
+    local nearest, dist = nil, math.huge
 
-        for _, ring in ipairs(Dungeon_Station:GetChildren()) do
-            if ring:IsA("BasePart") then
-                local d = (hrp.Position - ring.Position).Magnitude
-                if d < dist then
-                    dist = d
-                    nearest = ring
-                end
+    for _, ring in ipairs(folder:GetChildren()) do
+        if ring:IsA("BasePart") then
+            local d = (hrp.Position - ring.Position).Magnitude
+            if d < dist then
+                dist = d
+                nearest = ring
             end
         end
+    end
 
-        if nearest then
-            Notify("Teleporting", "Teleporting to nearest Dungeon_Station...")
-            ReplicatedStorage.Remotes.SetMounted:FireServer(true)
-            task.wait(0.25)
-            hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.75)
-            ReplicatedStorage.Remotes.SetMounted:FireServer(false)
-        else
-            Notify("No Rings", "No Dungeon_Station rings found under MenuRings.Dungeon_Station.Ring.")
+    if nearest then
+        Notify("Teleporting", "Teleporting to nearest " .. displayName .. "...")
+        ReplicatedStorage.Remotes.SetMounted:FireServer(true)
+        task.wait(0.25)
+        hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
+        task.wait(0.75)
+        ReplicatedStorage.Remotes.SetMounted:FireServer(false)
+    else
+        Notify("No Rings", "No rings found under MenuRings." .. ringName)
+    end
+end
+Tabs.Teles:AddDropdown("DungeonGuildDropdown", {
+    Title = "🚪Dungeon Portals / ⚔️Guild Hall",
+    Values = {
+        "🚪Dungeon Portals",
+        "⚔️Guild Hall"
+    },
+    Multi = false,
+    Default = nil,
+    Callback = function(selected)
+        if selected == "🚪Dungeon Portals" then
+            TeleportToRing("Dungeon_Station", "Dungeon Station")
+        elseif selected == "⚔️Guild Hall" then
+            TeleportToRing("Guilds", "Guild Hall")
         end
     end
 })
-Tabs.Teles:AddButton({
-    Title = "🏦 Bank",
-    Callback = function()
-        local menuRings = workspace:FindFirstChild("MenuRings")
-        local bank = menuRings and menuRings:FindFirstChild("Bank")
-
-        if not bank then
-            Notify("Bank Not Found", "MenuRings.Bank.Ring not found in Workspace.")
-            return
-        end
-
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            Notify("Error", "Character not loaded.")
-            return
-        end
-
-        local nearest, dist = nil, math.huge
-
-        for _, ring in ipairs(bank:GetChildren()) do
-            if ring:IsA("BasePart") then
-                local d = (hrp.Position - ring.Position).Magnitude
-                if d < dist then
-                    dist = d
-                    nearest = ring
-                end
-            end
-        end
-
-        if nearest then
-            Notify("Teleporting", "Teleporting to nearest bank...")
-            ReplicatedStorage.Remotes.SetMounted:FireServer(true)
-            task.wait(0.25)
-            hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.75)
-            ReplicatedStorage.Remotes.SetMounted:FireServer(false)
-        else
-            Notify("No Rings", "No bank rings found under MenuRings.Bank.Ring.")
+Tabs.Teles:AddDropdown("SellUpgradeDropdown", {
+    Title = "💰Sell / 🔧Upgrades / 🎁AuraChest",
+    Values = {
+        "💰Sell",
+        "🔧Upgrade",
+        "🎁Aura Chest"
+    },
+    Multi = false,
+    Default = nil,
+    Callback = function(selected)
+        if selected == "💰Sell" then
+            TeleportToRing("Sell", "Sell")
+        elseif selected == "🔧Upgrade" then
+            TeleportToRing("Upgrade", "Upgrade Station")
+        elseif selected == "🎁Aura Chest" then
+            TeleportToRing("AuraChest", "Aura Chest")
         end
     end
 })
-Tabs.Teles:AddButton({
-    Title = "💰 Sell",
-    Callback = function()
-        local menuRings = workspace:FindFirstChild("MenuRings")
-        local Sell = menuRings and menuRings:FindFirstChild("Sell")
-
-        if not Sell then
-            Notify("Bank Not Found", "MenuRings.Sell.Ring not found in Workspace.")
-            return
-        end
-
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            Notify("Error", "Character not loaded.")
-            return
-        end
-
-        local nearest, dist = nil, math.huge
-
-        for _, ring in ipairs(Sell:GetChildren()) do
-            if ring:IsA("BasePart") then
-                local d = (hrp.Position - ring.Position).Magnitude
-                if d < dist then
-                    dist = d
-                    nearest = ring
-                end
-            end
-        end
-
-        if nearest then
-            Notify("Teleporting", "Teleporting to nearest Sell...")
-            ReplicatedStorage.Remotes.SetMounted:FireServer(true)
-            task.wait(0.25)
-            hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.75)
-            ReplicatedStorage.Remotes.SetMounted:FireServer(false)
-        else
-            Notify("No Rings", "No Sell rings found under MenuRings.Sell.Ring.")
-        end
-    end
-})
-Tabs.Teles:AddButton({
-    Title = "🔧 Upgrade",
-    Callback = function()
-        local menuRings = workspace:FindFirstChild("MenuRings")
-        local Upgrade = menuRings and menuRings:FindFirstChild("Upgrade")
-
-        if not Upgrade then
-            Notify("Bank Not Found", "MenuRings.Upgrade.Ring not found in Workspace.")
-            return
-        end
-
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            Notify("Error", "Character not loaded.")
-            return
-        end
-
-        local nearest, dist = nil, math.huge
-
-        for _, ring in ipairs(Upgrade:GetChildren()) do
-            if ring:IsA("BasePart") then
-                local d = (hrp.Position - ring.Position).Magnitude
-                if d < dist then
-                    dist = d
-                    nearest = ring
-                end
-            end
-        end
-
-        if nearest then
-            Notify("Teleporting", "Teleporting to nearest Upgrade...")
-            ReplicatedStorage.Remotes.SetMounted:FireServer(true)
-            task.wait(0.25)
-            hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.75)
-            ReplicatedStorage.Remotes.SetMounted:FireServer(false)
-        else
-            Notify("No Rings", "No Upgrade rings found under MenuRings.Upgrade.Ring.")
-        end
-    end
-})
-Tabs.Teles:AddButton({
-    Title = "🥚 Egg Shop",
-    Callback = function()
-        local menuRings = workspace:FindFirstChild("MenuRings")
-        local EggShop = menuRings and menuRings:FindFirstChild("EggShop")
-
-        if not EggShop then
-            Notify("Bank Not Found", "MenuRings.EggShop.Ring not found in Workspace.")
-            return
-        end
-
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            Notify("Error", "Character not loaded.")
-            return
-        end
-
-        local nearest, dist = nil, math.huge
-
-        for _, ring in ipairs(EggShop:GetChildren()) do
-            if ring:IsA("BasePart") then
-                local d = (hrp.Position - ring.Position).Magnitude
-                if d < dist then
-                    dist = d
-                    nearest = ring
-                end
-            end
-        end
-
-        if nearest then
-            Notify("Teleporting", "Teleporting to nearest EggShop...")
-            ReplicatedStorage.Remotes.SetMounted:FireServer(true)
-            task.wait(0.25)
-            hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.75)
-            ReplicatedStorage.Remotes.SetMounted:FireServer(false)
-        else
-            Notify("No Rings", "No EggShop rings found under MenuRings.EggShop.Ring.")
-        end
-    end
-})
-Tabs.Teles:AddButton({
-    Title = "🎁 Aura Chest",
-    Callback = function()
-        local menuRings = workspace:FindFirstChild("MenuRings")
-        local AuraChest = menuRings and menuRings:FindFirstChild("AuraChest")
-
-        if not AuraChest then
-            Notify("Bank Not Found", "MenuRings.AuraChest.Ring not found in Workspace.")
-            return
-        end
-
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            Notify("Error", "Character not loaded.")
-            return
-        end
-
-        local nearest, dist = nil, math.huge
-
-        for _, ring in ipairs(AuraChest:GetChildren()) do
-            if ring:IsA("BasePart") then
-                local d = (hrp.Position - ring.Position).Magnitude
-                if d < dist then
-                    dist = d
-                    nearest = ring
-                end
-            end
-        end
-
-        if nearest then
-            Notify("Teleporting", "Teleporting to nearest AuraChest...")
-            ReplicatedStorage.Remotes.SetMounted:FireServer(true)
-            task.wait(0.25)
-            hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.75)
-            ReplicatedStorage.Remotes.SetMounted:FireServer(false)
-        else
-            Notify("No Rings", "No AuraChest rings found under MenuRings.AuraChest.Ring.")
+Tabs.Teles:AddDropdown("EggPetDropdown", {
+    Title = "🥚Egg Shop / 🐈Pet Terminals",
+    Values = {
+        "🥚Egg Shop",
+        "🐈Pet Master",
+        "🐣Pet Incubator",
+        "☢️Pet Fusion"
+    },
+    Multi = false,
+    Default = nil,
+    Callback = function(selected)
+        if selected == "🥚Egg Shop" then
+            TeleportToRing("EggShop", "Egg Shop")
+        elseif selected == "🐈Pet Master" then
+            TeleportToRing("PetMaster", "Pet Master")
+        elseif selected == "🐣Pet Incubator" then
+            TeleportToRing("PetIncubator", "Pet Incubator")
+        elseif selected == "☢️Pet Fusion" then
+            TeleportToRing("Pet_Fusion_Ring", "Pet Fusion")
         end
     end
 })
@@ -1386,7 +1230,7 @@ Tabs.Settings:AddButton({
 })
 
 Tabs.Settings:AddParagraph({
-    Title = "World Zero 🚀 Hub v.4.2",
+    Title = "World Zero 🚀 Hub v1.4.2",
     Content = "Made by 42Oreobun"
 })
 
