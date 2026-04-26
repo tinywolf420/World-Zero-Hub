@@ -16,9 +16,12 @@ local VIM = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 
+
+
 getgenv().Attack = false
 getgenv().autoSkills = false
 getgenv().killAura = false
+
 
 
 --// Load Fluent + Addons
@@ -48,12 +51,14 @@ local Window = Fluent:CreateWindow({
 
 --// Tabs
 local Tabs = {
-    Main = Window:AddTab({ Title = "Main Terminal 🏡", Icon = "monitor" }),
+    Main = Window:AddTab({ Title = "Main Terminal 🖥️", Icon = "database" }),
+    Combat = Window:AddTab({ Title = "Combat Terminal 🛡️", Icon = "swords" }),
     Teles = Window:AddTab({ Title = "Teleport Terminal 🌎", Icon = "globe" }),
-    PlayerSettings = Window:AddTab({ Title = "Player Terminal 🙍", Icon = "person-standing" }),
-    Events = Window:AddTab({ Title = "Events Terminal 🍻", Icon = "calendar-days" }),
-    Qlinks = Window:AddTab({ Title = "Launchers Terminal 💻", Icon = "crown" }),
-    DevLinks = Window:AddTab({ Title = "Developer Terminal 🧰", Icon = "file-code" }),
+    Events = Window:AddTab({ Title = "Events Terminal 🐰", Icon = "carrot" }),
+    Invent = Window:AddTab({ Title = "Inventory Terminal 👜", Icon = "backpack" }),
+    PlayerSettings = Window:AddTab({ Title = "Player Terminal 🙍", Icon = "scan-face" }),
+    Qlinks = Window:AddTab({ Title = "Launchers Terminal 🧑‍💻", Icon = "crown" }),
+    DevLinks = Window:AddTab({ Title = "Developer Terminal 🛠️", Icon = "file-code" }),
     Settings = Window:AddTab({ Title = " Settings Terminal ⚙️", Icon = "settings" })
 }
 
@@ -413,7 +418,7 @@ local function clickLoop()
         while getgenv().kill do
             VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
             VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-            task.wait(0.1)
+            task.wait(0.5)
         end
     end)
 end
@@ -428,11 +433,11 @@ end
 local skillThread = nil
 
 local skills = {
-    {key = Enum.KeyCode.E, delay = 1.0, lastUsed = 0},
-    {key = Enum.KeyCode.R, delay = 1.0, lastUsed = 0},
-    {key = Enum.KeyCode.F, delay = 1.0, lastUsed = 0},
-    {key = Enum.KeyCode.X, delay = 3.0, lastUsed = 0},
-    {key = Enum.KeyCode.One, delay = 0.5, lastUsed = 0},
+    {key = Enum.KeyCode.E,   delay = 3.0,  lastUsed = 0},
+    {key = Enum.KeyCode.R,   delay = 13.0, lastUsed = 0},
+    {key = Enum.KeyCode.F,   delay = 11.0, lastUsed = 0},
+    {key = Enum.KeyCode.X,   delay = 60.0, lastUsed = 0},
+    {key = Enum.KeyCode.One, delay = 1.0,  lastUsed = 0},
 }
 
 local function pressKey(key)
@@ -441,7 +446,6 @@ local function pressKey(key)
 end
 
 local function SkillLoop()
-    -- جلوگیری از چند بار اجرا شدن
     if skillThread then return end
 
     skillThread = task.spawn(function()
@@ -458,10 +462,10 @@ local function SkillLoop()
             task.wait(0.05)
         end
 
-        -- reset thread when stopped
         skillThread = nil
     end)
 end
+
 
 local function SkillKill(state)
     getgenv().kill = state
@@ -470,7 +474,424 @@ local function SkillKill(state)
     end
 end -- ← THIS WAS MISSING
 
+--====================================================
+-- HUMANOID RESTORE (GLOBAL FIX)
+--====================================================
+local function restoreHumanoid()
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
 
+    if hum then
+        hum:ChangeState(Enum.HumanoidStateType.Running)
+        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+end
+
+--====================================================
+-- AUTO MOB SYSTEM (FULLY FIXED)
+--====================================================
+
+getgenv().autoMob = false
+getgenv().rotateMob = false
+
+local mobThread = nil
+
+local function getClosestMob()
+    local char = player.Character
+    if not char then return nil end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+
+    local mobsFolder = workspace:FindFirstChild("Mobs")
+    if not mobsFolder then return nil end
+
+    local closest, dist = nil, math.huge
+
+    for _, mob in ipairs(mobsFolder:GetChildren()) do
+        local part = mob:FindFirstChild("HumanoidRootPart") or mob:FindFirstChild("Collider")
+        if part then
+            local d = (hrp.Position - part.Position).Magnitude
+            if d < dist then
+                dist = d
+                closest = part
+            end
+        end
+    end
+
+    return closest
+end
+
+local function startMobLoop()
+    if mobThread then return end
+
+    mobThread = task.spawn(function()
+        while getgenv().autoMob do
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+            if hrp and hum then
+                local mob = getClosestMob()
+
+                if mob then
+                    local targetPos
+
+                    if getgenv().rotateMob then
+                        local angle = tick() * 2
+                        local radius = 6
+
+                        targetPos = mob.Position + Vector3.new(
+                            math.cos(angle) * radius,
+                            3,
+                            math.sin(angle) * radius
+                        )
+                    else
+                        targetPos = mob.Position + Vector3.new(0, 3, 4)
+                    end
+
+                    -- LOCK PLAYER MOVEMENT
+                    hum:ChangeState(Enum.HumanoidStateType.Physics)
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.AssemblyAngularVelocity = Vector3.zero
+
+                    -- MOVE + FACE
+                    hrp.CFrame = CFrame.new(targetPos)
+                    hrp.CFrame = CFrame.lookAt(hrp.Position, mob.Position)
+
+                    -- AUTO ATTACK
+                    pcall(function()
+                        ReplicatedStorage.Remotes.ItemUsed:FireServer("Attack")
+                    end)
+                end
+            end
+
+            task.wait(0.05)
+        end
+
+        -- CLEAN EXIT
+        mobThread = nil
+        restoreHumanoid()
+    end)
+end
+
+--====================================================
+-- CHECKPOINT AUTO-TOUCH SYSTEM (FULLY FIXED)
+--====================================================
+
+getgenv().autoCheckpoints = false
+local checkpointThread = nil
+
+-- Recursively find any BasePart with TouchInterest
+local function findCheckpointPart(obj)
+    if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
+        return obj
+    end
+    for _, child in ipairs(obj:GetChildren()) do
+        local found = findCheckpointPart(child)
+        if found then return found end
+    end
+    return nil
+end
+
+local function startCheckpointLoop()
+    if checkpointThread then return end
+
+    checkpointThread = task.spawn(function()
+        while getgenv().autoCheckpoints do
+            local missionObjects = workspace:FindFirstChild("MissionObjects")
+            local checkpointsFolder = missionObjects and missionObjects:FindFirstChild("Checkpoints")
+
+            if checkpointsFolder then
+                local char = player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+                if hrp then
+                    for _, checkpoint in ipairs(checkpointsFolder:GetChildren()) do
+                        local part = findCheckpointPart(checkpoint)
+
+                        if part then
+                            pcall(function()
+                                firetouchinterest(hrp, part, 0)
+                                task.wait()
+                                firetouchinterest(hrp, part, 1)
+                            end)
+                        end
+                    end
+                end
+            end
+
+            task.wait(5)
+        end
+
+        -- CLEAN EXIT
+        checkpointThread = nil
+        restoreHumanoid()
+    end)
+end
+
+--====================================================
+-- AUTO CHEST OPENER
+--====================================================
+
+getgenv().autoChests = false
+local chestThread = nil
+
+local function tapChest(btn)
+    if not btn then return end
+
+    -- Try all safe activation methods
+    pcall(function()
+        btn:Activate()
+    end)
+
+    pcall(function()
+        firesignal(btn.MouseButton1Click)
+    end)
+
+    pcall(function()
+        firesignal(btn.MouseButton1Down)
+    end)
+end
+
+local function startChestLoop()
+    if chestThread then return end
+
+    chestThread = task.spawn(function()
+        while getgenv().autoChests do
+            local gui = player:WaitForChild("PlayerGui")
+            local rewards = gui:FindFirstChild("MissionRewards", true)
+
+            if rewards then
+                local boxes = rewards:FindFirstChild("Boxes", true)
+
+                if boxes then
+                    for _, chest in ipairs(boxes:GetChildren()) do
+                        if chest:IsA("ImageButton") or chest:IsA("TextButton") then
+                            tapChest(chest)
+                        end
+                    end
+                end
+            end
+
+            task.wait(1) -- check every second
+        end
+
+        chestThread = nil
+    end)
+end
+local function getBestUpgradeItem()
+    local itemsFolder = player.PlayerGui.Profile.Inventory.Items
+
+    local bestItem = nil
+    local bestScore = -math.huge
+
+    for _, item in ipairs(itemsFolder:GetChildren()) do
+
+        local upgrade = item:FindFirstChild("Upgrade")
+        local limit = item:FindFirstChild("UpgradeLimit")
+        local level = item:FindFirstChild("Level")
+
+        if upgrade and limit and level then
+
+            local remaining = limit.Value - upgrade.Value
+
+            -- Ignore maxed items
+            if remaining > 0 then
+
+                local score =
+                    level.Value * 1.5 +   -- base power
+                    remaining * 25        -- upgrade potential weight
+
+                -- optional perk bonus
+                if item:FindFirstChild("Perk1") then
+                    score += 10
+                end
+
+                if item:FindFirstChild("Perk2") then
+                    score += 10
+                end
+
+                if item:FindFirstChild("Perk3") then
+                    score += 10
+                end
+
+                if score > bestScore then
+                    bestScore = score
+                    bestItem = item
+                end
+            end
+        end
+    end
+
+    return bestItem, bestScore
+end
+
+local function getScoreData(ratio, results)
+
+    results.stats.total = (results.stats.total or 0) + 1
+
+    if ratio >= 0.95 then
+        results.stats.perfect = (results.stats.perfect or 0) + 1
+        return "💎 PERFECT", "KEEP"
+
+    elseif ratio >= 0.85 then
+        results.stats.excellent = (results.stats.excellent or 0) + 1
+        return "🟢 EXCELLENT+", "KEEP"
+
+    elseif ratio >= 0.70 then
+        results.stats.excellent = (results.stats.excellent or 0) + 1
+        return "🟢 EXCELLENT", "KEEP"
+
+    elseif ratio >= 0.55 then
+        results.stats.good = (results.stats.good or 0) + 1
+        return "🟡 GOOD+", "KEEP"
+
+    elseif ratio >= 0.40 then
+        results.stats.good = (results.stats.good or 0) + 1
+        return "🟡 GOOD", "REVIEW"
+
+    elseif ratio >= 0.25 then
+        results.stats.weak = (results.stats.weak or 0) + 1
+        return "🟠 WEAK", "REVIEW"
+
+    elseif ratio >= 0.15 then
+        results.stats.weak = (results.stats.weak or 0) + 1
+        return "🟠 VERY WEAK", "SELL"
+
+    elseif ratio >= 0.05 then
+        results.stats.bad = (results.stats.bad or 0) + 1
+        return "🔴 BAD", "SELL"
+
+    else
+        results.stats.trash = (results.stats.trash or 0) + 1
+        return "⚫ TRASH", "SELL"
+    end
+end
+
+
+local function analyzeInventory(playerEquip)
+    local slots = {"Armor", "Primary", "Offhand"}
+
+    local results = {
+        keep = {},
+        review = {},
+        sell = {},
+
+        stats = {
+            total = 0,
+            perfect = 0,
+            excellent = 0,
+            good = 0,
+            weak = 0,
+            bad = 0,
+            trash = 0
+        }
+    }
+
+
+    for _, slotName in ipairs(slots) do
+        local slot = playerEquip:FindFirstChild(slotName)
+
+        if slot then
+            for _, item in ipairs(slot:GetChildren()) do
+
+                local upgrade = item:FindFirstChild("Upgrade")
+                local limit = item:FindFirstChild("UpgradeLimit")
+
+                if upgrade and limit then
+                    local u = tonumber(upgrade.Value or upgrade:GetAttribute("Value"))
+                    local l = tonumber(limit.Value or limit:GetAttribute("Value"))
+
+                    if u and l then
+                        local ratio = u / math.max(l, 1)
+
+                        local rankText, category = getScoreData(ratio, results)
+
+
+                        local entry = {
+                            name = item.Name,
+                            slot = slotName,
+                            ratio = ratio,
+                            rank = rankText
+                        }
+
+                        table.insert(results[category:lower()], entry)
+
+                        print(slotName, item.Name, rankText, ratio)
+                    end
+                end
+            end
+        end
+    end
+
+    return results
+end
+
+local function printSummary(results)
+
+    local stats = results.stats
+
+    local sellCount =
+        (results.sell and #results.sell) or 0
+
+    local keepCount =
+        (results.keep and #results.keep) or 0
+
+    Notify(
+        "📊 FULL INVENTORY INTELLIGENCE REPORT",
+        "📦 TOTAL ITEMS: " .. stats.total .. "\n\n" ..
+
+        "💎 PERFECT: " .. stats.perfect .. "\n" ..
+        "🟢 EXCELLENT: " .. stats.excellent .. "\n" ..
+        "🟡 GOOD: " .. stats.good .. "\n" ..
+        "🟠 WEAK: " .. stats.weak .. "\n" ..
+        "🔴 BAD: " .. stats.bad .. "\n" ..
+        "⚫ TRASH: " .. stats.trash .. "\n\n" ..
+
+        "📊 BREAKDOWN:\n" ..
+        "KEEP → High performance gear\n" ..
+        "REVIEW → Compare before replacing\n" ..
+        "SELL → Low value items\n\n" ..
+
+        "🎯 INSIGHT:\n" ..
+        (sellCount > keepCount and
+            "⚠️ Inventory is heavily weighted toward weak gear"
+            or "✅ Loadout is mostly optimized")
+    )
+end
+
+
+
+getgenv().autoSellSuggest = false
+getgenv().lastInventoryScan = nil
+
+local function getEquippedItems(playerEquip)
+    local equipped = {}
+
+    local slots = {"Armor", "Primary", "Offhand"}
+
+    for _, slotName in ipairs(slots) do
+        local slot = playerEquip:FindFirstChild(slotName)
+
+        if slot then
+            for _, item in ipairs(slot:GetChildren()) do
+                equipped[item.Name] = true
+            end
+        end
+    end
+
+    return equipped
+end
+
+local function getWorldTeleportFolder()
+    local menuRings = workspace:FindFirstChild("MenuRings")
+    if not menuRings then return nil end
+
+    -- try BOTH possible names
+    return menuRings:FindFirstChild("World_Teleport")
+        or menuRings:FindFirstChild("Teleport")
+end
 
 ---------------------------------------------------------
 -- SCRIPT END ^^^^^^ NOTHGING BETWEEN vvvvvv
@@ -478,56 +899,19 @@ end -- ← THIS WAS MISSING
 ---------------------------------------------------------
 -- MAIN TAB (your section stays clean)
 ---------------------------------------------------------
-Tabs.Main:AddSection("⚔️ Combat 🛡️")
--- Create the toggle FIRST
-local killToggle = Tabs.Main:AddToggle("KillToggle", {
-    Title = "Auto Attack ⚠️(Do Not Need To Click This Use Keybind)⚠️",
+Tabs.Main:AddSection("🔮 Misc:")
+local chestToggle = Tabs.Main:AddToggle("AutoChests", {
+    Title = "🎁 Auto Open Mission Chests",
     Default = false,
     Callback = function(state)
-        setKill(state)
+        getgenv().autoChests = state
+        if state then
+            startChestLoop()
+        end
     end
 })
 
-local KillKeybind = Tabs.Main:AddKeybind("KillKeybind", {
-    Title = "Auto Attack Keybind",
-    Mode = "Toggle",
-    Default = "Nine",
 
-    Callback = function(Value)
-        killToggle:SetValue(Value) -- FIXED
-    end,
-
-    ChangedCallback = function(New)
-        print("Kill keybind changed!", New)
-    end
-})
-
-local skillToggle = Tabs.Main:AddToggle("SkillToggle", {
-    Title = "Auto Skills ⚠️(Do Not Need To Click This Use Keybind)⚠️",
-    Default = false,
-    Callback = function(state)
-        getgenv().autoSkills = state
-        if state then SkillLoop() end
-    end
-})
-
-local skillKeybind = Tabs.Main:AddKeybind("SkillKeybind", {
-    Title = "Auto Skills Keybind",
-    Mode = "Toggle",
-    Default = "Eight",
-    Callback = function(v)
-        skillToggle:SetValue(v)
-    end
-})
-
-KillKeybind:OnClick(function()
-    print("Kill keybind clicked:", KillKeybind:GetState())
-end)
-
-KillKeybind:OnChanged(function()
-    print("Kill keybind changed:", KillKeybind.Value)
-end)
-Tabs.Main:AddSection("🔮 Misc 🔮")
 -- PROMO CODE INPUT
 local PromoInput = Tabs.Main:AddInput("PromoInput", {
     Title = "Promo Code",
@@ -566,27 +950,164 @@ Tabs.Main:AddButton({
     end
 })
 
+---------------------------------------------------------
+-- COMBAT TERMINAL
+---------------------------------------------------------
+Tabs.Combat:AddSection("⚔️ Combat Enable/Disabled Checks🛡️")
+-- Create the toggle FIRST
+
+-- Auto Attack (Eight)
+local killToggle = Tabs.Combat:AddToggle("KillToggle", {
+    Title = "⚔️ Auto Attack | ⬇️  Keybind: [ Three ] \n(Do Not Need To Click This Use Keybind)⚠️",
+    Default = false,
+    Callback = function(state)
+        setKill(state)
+    end
+})
+-- Auto Skills (Nine)
+local skillToggle = Tabs.Combat:AddToggle("SkillToggle", {
+    Title = "🤺 Auto Skills | ⬇️  Keybind: [ Four ] \n(Do Not Need To Click This Use Keybind)⚠️",
+    Default = false,
+    Callback = function(state)
+        getgenv().autoSkills = state
+        if state then
+            SkillLoop()
+        else
+            skillThread = nil
+        end
+    end
+})
+-- Auto Move to Mob (Six)
+local mobMoveToggle = Tabs.Combat:AddToggle("AutoMobMove", {
+    Title = "⚔️ Auto Move to Mob | ⬇️  Keybind: [ Five ] \n(Do Not Need To Click This Use Keybind)⚠️",
+    Default = false,
+    Callback = function(state)
+        getgenv().autoMob = state
+
+        if state then
+            startMobLoop()
+        else
+            restoreHumanoid()
+        end
+    end
+
+})
+-- Circle Around Mob (Seven)
+local rotateToggle = Tabs.Combat:AddToggle("RotateMob", {
+    Title = "⭕ Circle Around Mob | ⬇️  Keybind: [ Six ] \n(Do Not Need To Click This Use Keybind)⚠️",
+    Default = false,
+    Callback = function(state)
+        getgenv().rotateMob = state
+    end
+})
+Tabs.Combat:AddSection("🐲 Auto Dungeon Progession:")
+-- Auto Move to Mob
+
+-- Auto Checkpoints
+local checkpointsToggle = Tabs.Combat:AddToggle("autoCheckpoints", {
+    Title = "⚔️ Auto Advance",
+    Default = false,
+    Callback = function(state)
+        getgenv().autoCheckpoints = state
+
+        if state then
+            startCheckpointLoop()
+        else
+            restoreHumanoid()
+        end
+    end
+})
 
 
+
+Tabs.Combat:AddSection("⚔️ Combat Keybinds:")
+local KillKeybind = Tabs.Combat:AddKeybind("KillKeybind", {
+    Title = "⚔️ Auto Basic Attack Keybind",
+    Mode = "Toggle",
+    Default = "Three",
+
+    Callback = function(Value)
+        killToggle:SetValue(Value)
+        killToggle:SetTitle("⚔️Auto Attack | ⬇️  Keybind: [ " .. tostring(Value) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
+    end,
+
+    ChangedCallback = function(New)
+        killToggle:SetTitle("⚔️Auto Attack | ⬇️  Keybind: [ " .. tostring(Value) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
+    end
+})
+local skillKeybind = Tabs.Combat:AddKeybind("SkillKeybind", {
+    Title = "🤺 Auto Attack Skills Keybind",
+    Mode = "Toggle",
+    Default = "Four",
+
+    Callback = function(Value)
+        skillToggle:SetValue(Value)
+        skillToggle:SetTitle("🤺Auto Skills | ⬇️  Keybind: [ " .. tostring(Value) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
+    end,
+
+    ChangedCallback = function(New)
+        skillToggle:SetTitle("🤺Auto Skills | ⬇️  Keybind: [ " .. tostring(New) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
+    end
+})
+local mobMoveKeybind = Tabs.Combat:AddKeybind("AutoMobMoveKeybind", {
+    Title = "⚔️ Auto Move Keybind",
+    Mode = "Toggle",
+    Default = "Five",
+
+    Callback = function(Value)
+        mobMoveToggle:SetValue(Value)
+        mobMoveToggle:SetTitle("⚔️Auto Move to Mob | ⬇️  Keybind: [ " .. tostring(Value) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
+    end,
+
+    ChangedCallback = function(New)
+        mobMoveToggle:SetTitle("⚔️Auto Move to Mob | ⬇️  Keybind: [ " .. tostring(New) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
+    end
+})
+
+local rotateKeybind = Tabs.Combat:AddKeybind("RotateMobKeybind", {
+    Title = "⭕ Circle Rotate Mob Keybind",
+    Mode = "Toggle",
+    Default = "Six",
+
+    Callback = function(Value)
+        rotateToggle:SetValue(Value)
+        rotateToggle:SetTitle("⭕Circle Around Mob | ⬇️  Keybind: [ " .. tostring(Value) .. " ] \n⚠️(Do Not Need To Click This Use Keybind)⚠️")
+    end,
+
+    ChangedCallback = function(New)
+        rotateToggle:SetTitle("⭕Circle Around Mob | ⬇️  Keybind: [ " .. tostring(New) .. " ] \n⚠️(Do Not Need To Click This Use Keybind)⚠️")
+    end
+})
+
+
+
+KillKeybind:OnClick(function()
+    print("Kill keybind clicked:", KillKeybind:GetState())
+end)
+
+KillKeybind:OnChanged(function()
+    print("Kill keybind changed:", KillKeybind.Value)
+end)
 
 ---------------------------------------------------------
 -- TELEPORT TAB
 ---------------------------------------------------------
-Tabs.Teles:AddSection("🛫World Teleports🛬")
+Tabs.Teles:AddSection("World Teleports🛫")
 
 Tabs.Teles:AddButton({
-    Title = "🛫World Teleports🛬",
+    Title = "🛫World Teleports (Auto Detect)",
     Callback = function()
-        local menuRings = workspace:FindFirstChild("MenuRings")
-        local World_Teleport = menuRings and menuRings:FindFirstChild("World_Teleport")
 
-        if not World_Teleport then
-            Notify("Bank Not Found", "MenuRings.World_Teleport.Ring not found in Workspace.")
+        local folder = getWorldTeleportFolder()
+
+        if not folder then
+            Notify("Not Found", "No World Teleport folder found (World_Teleport / Teleport)")
             return
         end
 
         local char = player.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
         if not hrp then
             Notify("Error", "Character not loaded.")
             return
@@ -594,7 +1115,7 @@ Tabs.Teles:AddButton({
 
         local nearest, dist = nil, math.huge
 
-        for _, ring in ipairs(World_Teleport:GetChildren()) do
+        for _, ring in ipairs(folder:GetChildren()) do
             if ring:IsA("BasePart") then
                 local d = (hrp.Position - ring.Position).Magnitude
                 if d < dist then
@@ -605,17 +1126,22 @@ Tabs.Teles:AddButton({
         end
 
         if nearest then
-            Notify("Teleporting", "Teleporting to nearest World_Teleport...")
+            Notify("Teleporting", "Using detected teleport system...")
+
             ReplicatedStorage.Remotes.SetMounted:FireServer(true)
             task.wait(0.25)
+
             hrp.CFrame = nearest.CFrame + Vector3.new(0, 3, 0)
+
             task.wait(0.75)
             ReplicatedStorage.Remotes.SetMounted:FireServer(false)
+
         else
-            Notify("No Rings", "No World_Teleport rings found under MenuRings.World_Teleport.Ring.")
+            Notify("No Rings", "No teleport parts found in folder.")
         end
     end
 })
+
 
 local worldTeleports = {
     {name = "World 1", id = 13},
@@ -713,10 +1239,10 @@ if waystonesFolder then
         return names
     end
 
-    Tabs.Teles:AddSection("🗿 Waystones")
+    Tabs.Teles:AddSection("🗿 Waystones:")
 
     local WaystoneDropdown = Tabs.Teles:AddDropdown("WaystoneDropdown", {
-        Title = "🗿 Waystone Teleports",
+        Title = "🗿 Waystone Teleports: (Dropdown)",
         Values = GetWaystoneNames(),
         Multi = false,
         Default = nil,
@@ -768,7 +1294,7 @@ end
 -- BANK TAB
 ---------------------------------------------------------
 
-Tabs.Teles:AddSection("⭕ Interactive Rings")
+Tabs.Teles:AddSection("⭕ Interactive Rings:")
 Tabs.Teles:AddParagraph({
     Title = "⚠️ Warning",
     Content = "‼️ Auto uses Mount To Not Die when Teleporting✅ ‼️ \nPossible to still Die tho.. "
@@ -873,7 +1399,7 @@ Tabs.Teles:AddDropdown("EggPetDropdown", {
 ---------------------------------------------------------
 -- EVENTS TAB (EggHunt Teleport List) – SAFE
 ---------------------------------------------------------
-Tabs.Events:AddSection("Event Interactive Ring Teleport")
+Tabs.Events:AddSection("🐰 Event Interactive Rings:")
 Tabs.Events:AddButton({
     Title = "🎉 Event Portal 🐰",
     Callback = function()
@@ -1007,7 +1533,7 @@ if scavRoot and eggHuntFolder and spawnsFolder then
     end
 
     local EggDropdown = Tabs.Events:AddDropdown("EggHuntDropdown", {
-        Title = "🥚Hunt Teleports",
+        Title = "🥚Hunt Teleports (Dropdown)",
         Values = GetEggNames(),
         Multi = false,
         Default = nil,
@@ -1033,7 +1559,7 @@ if scavRoot and eggHuntFolder and spawnsFolder then
     })
 
     Tabs.Events:AddButton({
-        Title = "♻️Refresh 🥚Hunt Spawns",
+        Title = "♻️Refresh 🥚Hunt Spawns Locations",
         Callback = function()
             Notify("Refreshing", "Scanning EggHunt spawns...")
 
@@ -1051,7 +1577,7 @@ else
     })
 end
 
-Tabs.Events:AddSection("Egg ESPs")
+Tabs.Events:AddSection("🥚 Egg / 📛 Name ESP")
 Tabs.Events:AddToggle("EggESP", {
     Title = "🥚 ESP (Live Models)",
     Default = false,
@@ -1070,11 +1596,172 @@ Tabs.Events:AddToggle("GoldenEggESP", {
 })
 
 ---------------------------------------------------------
+-- EVENTS TAB (EggHunt Teleport List) – SAFE
+---------------------------------------------------------
+Tabs.Invent:AddSection("💪 Gear Upgrades:")
+
+Tabs.Invent:AddButton({
+    Title = "🧪 Scan Inventory",
+    Callback = function()
+
+        local player = game:GetService("Players").LocalPlayer
+        local equipsFolder = game:GetService("ReplicatedStorage"):FindFirstChild("PlayerEquips")
+        local playerEquip = equipsFolder and equipsFolder:FindFirstChild(player.Name)
+
+        if not playerEquip then
+            warn("No equip data found")
+            return
+        end
+
+        local results = analyzeInventory(playerEquip)
+
+        printSummary(results)
+
+        -- only shows “suggestions”
+        if getgenv().autoSellSuggest then
+            Notify("💰 SELL SUGGESTIONS",
+                "Items marked SELL: " .. #results.sell ..
+                "\n(Check console for details)"
+            )
+        end
+    end
+})
+
+
+Tabs.Invent:AddParagraph({
+    Title = "⚠️ Equipped Item Upgrade Detector Info:\n",
+    Content =
+        "🟢 EXCELLENT = near max\n" ..
+        "🟡 GOOD = mid upgraded\n" ..
+        "🟠 BAD = low upgraded\n" ..
+        "🔴 TERRIBLE = barely touched\n\n" ..
+              "📊 ITEM DETECTION:\n" ..
+              "Scans all equipped gear (Armor / Primary / Offhand)\n" ..
+              "Calculates upgrade progress using Upgrade ÷ UpgradeLimit\n" ..
+              "Displays a status rating + numeric score\n\n" ..
+        "🎯 PURPOSE:\n" .. "Helps identify which equipped item is weakest and should be upgraded first"
+})
+
+
+Tabs.Invent:AddButton({
+    Title = "🧪 Equipped Item Upgrade Detector",
+    Callback = function()
+
+        local Players = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+        local plr = Players.LocalPlayer
+        if not plr then
+            warn("No LocalPlayer")
+            return
+        end
+
+        local equipsFolder = ReplicatedStorage:FindFirstChild("PlayerEquips")
+        if not equipsFolder then
+            warn("PlayerEquips not found")
+            return
+        end
+
+        local playerEquip = equipsFolder:FindFirstChild(plr.Name)
+        if not playerEquip then
+            warn("No equip data for player")
+            return
+        end
+
+        local slots = {"Armor", "Primary", "Offhand"}
+
+        local bestItem = nil
+        local bestScore = math.huge
+
+        print("Scanning equipped items...")
+
+        -- 🔥 SCORE COLOR SYSTEM
+        local function getScoreStyle(ratio)
+            if ratio >= 0.8 then
+                return "🟢 EXCELLENT"
+            elseif ratio >= 0.5 then
+                return "🟡 GOOD"
+            elseif ratio >= 0.25 then
+                return "🟠 BAD"
+            else
+                return "🔴 TERRIBLE"
+            end
+        end
+
+        for _, slotName in ipairs(slots) do
+            local slot = playerEquip:FindFirstChild(slotName)
+
+            if slot then
+                for _, item in ipairs(slot:GetChildren()) do
+
+                    local upgrade = item:FindFirstChild("Upgrade")
+                    local limit = item:FindFirstChild("UpgradeLimit")
+
+                    if upgrade and limit then
+                        local u = tonumber(upgrade.Value or upgrade:GetAttribute("Value"))
+                        local l = tonumber(limit.Value or limit:GetAttribute("Value"))
+
+                        if u and l then
+                            local ratio = u / math.max(l, 1)
+
+                            print(slotName, "|", item.Name, "|", u .. "/" .. l, "|", ratio)
+
+                            local scoreText = getScoreStyle(ratio)
+
+                            -- 🔔 NOTIFY PER ITEM (new order)
+                            Notify(
+                                "ITEM DETECTED",
+                                slotName .. " → " .. item.Name ..
+                                "\nStatus: " .. scoreText ..
+                                "\nUpgrade: " .. u .. "/" .. l ..
+                                "\nScore: " .. string.format("%.2f", ratio)
+                            )
+
+
+                            -- track WORST item (lowest ratio)
+                            if ratio < bestScore then
+                                bestScore = ratio
+                                bestItem = item
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        -- 🏆 BEST ITEM NOTIFY (now includes Upgrade)
+        if bestItem then
+            local upgrade = bestItem:FindFirstChild("Upgrade")
+            local limit = bestItem:FindFirstChild("UpgradeLimit")
+
+            local u = upgrade and tonumber(upgrade.Value or upgrade:GetAttribute("Value")) or 0
+            local l = limit and tonumber(limit.Value or limit:GetAttribute("Value")) or 1
+
+            Notify(
+                "BEST EQUIPPED UPGRADE TARGET",
+                bestItem.Name ..
+                "\nStatus: " .. getScoreStyle(u / l) ..
+                "\nUpgrade: " .. u .. "/" .. l ..
+                "\nScore: " .. string.format("%.2f", u / l)
+            )
+
+            print("BEST EQUIPPED UPGRADE TARGET:", bestItem.Name, "Score:", bestScore)
+        else
+            warn("No equipped upgrade items found")
+        end
+
+
+    end
+})
+
+
+---------------------------------------------------------
 -- PLAYER SETTINGS TAB
 ---------------------------------------------------------
-Tabs.PlayerSettings:AddSection("ESP Section")
+Tabs.PlayerSettings:AddSection("ESP Section:")
+Tabs.PlayerSettings:AddSection("🙍 Player ESP:")
 Tabs.PlayerSettings:AddToggle("ESP", {
-    Title = "🙍ESP (Highlight)",
+    Title = "🙍Player ESP (Highlight)",
     Default = false,
     Callback = function(state)
         SetESP(state)
@@ -1082,16 +1769,16 @@ Tabs.PlayerSettings:AddToggle("ESP", {
 })
 
 Tabs.PlayerSettings:AddToggle("Player ESP", {
-    Title = "📛 Name ESP",
+    Title = "📛 Player Name ESP",
     Default = false,
     Callback = function(state)
         SetNameESP(state)
     end
 })
 
-Tabs.PlayerSettings:AddSection("Monster ESP")
+Tabs.PlayerSettings:AddSection("🐗 Monster ESP:")
 Tabs.PlayerSettings:AddToggle("MobESP", {
-    Title = "🐗Mob ESP",
+    Title = "🐗 Monster ESP",
     Default = false,
     Callback = function(state)
         mobEspEnabled = state
@@ -1100,7 +1787,7 @@ Tabs.PlayerSettings:AddToggle("MobESP", {
 })
 
 Tabs.PlayerSettings:AddToggle("MobNameESP", {
-    Title = "📛 Mob Name ESP",
+    Title = "📛 Monster Name ESP",
     Default = false,
     Callback = function(state)
         mobNameEspEnabled = state
@@ -1108,9 +1795,9 @@ Tabs.PlayerSettings:AddToggle("MobNameESP", {
     end
 })
 
-Tabs.PlayerSettings:AddSection("Walk-Speed / Jump-Height")
+Tabs.PlayerSettings:AddSection("🚶 Walk-Speed / 🚀 Jump-Height:")
 Tabs.PlayerSettings:AddSlider("WalkSpeed", {
-    Title = "🚶Walk Speed",
+    Title = "🚶 Player Walk Speed",
     Description = "Adjust your movement speed",
     Default = 25,
     Min = 25,
@@ -1123,7 +1810,7 @@ Tabs.PlayerSettings:AddSlider("WalkSpeed", {
 })
 
 Tabs.PlayerSettings:AddSlider("JumpHeight", {
-    Title = "🚀Jump Height",
+    Title = "🚀 Player Jump Height",
     Description = "Adjust how high you jump",
     Default = 75,
     Min = 75,
@@ -1134,9 +1821,9 @@ Tabs.PlayerSettings:AddSlider("JumpHeight", {
     end
 })
 
-Tabs.PlayerSettings:AddSection("No-Clip / Flying ")
+Tabs.PlayerSettings:AddSection("🔍 No-Clip:")
 Tabs.PlayerSettings:AddToggle("Noclip", {
-    Title = "🔍Noclip",
+    Title = "🔍 Noclip",
     Default = false,
     Callback = function(state)
         SetNoclip(state)
@@ -1146,7 +1833,7 @@ Tabs.PlayerSettings:AddToggle("Noclip", {
 ---------------------------------------------------------
 -- QUICK URLS TAB
 ---------------------------------------------------------
-Tabs.Qlinks:AddSection("Quick Launch Hubs")
+Tabs.Qlinks:AddSection("🔗 Quick Launch Hubs:")
 
 local OtherHubs = {
     ["JDRS World Zero"] = "https://raw.githubusercontent.com/justdoingrandomstuff/World-Zero/main/autofarm",
@@ -1165,7 +1852,7 @@ end
 ---------------------------------------------------------
 -- DEV SETTINGS TAB
 ---------------------------------------------------------
-Tabs.DevLinks:AddSection("Dev Quick Links")
+Tabs.DevLinks:AddSection("🔗 Dev Quick Links:")
 local DevHubs = {
     ["Dex"] = "https://raw.githubusercontent.com/peyton2465/Dex/master/out.lua",
     ["Clipboard Spy"] = "https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/Key/Clipboard.lua",
@@ -1181,7 +1868,7 @@ for name, url in pairs(DevHubs) do
     })
 end
 
-Tabs.DevLinks:AddSection("Older Links:")
+Tabs.DevLinks:AddSection("🔗 Older Links:")
 local OldLinks = {
     ["Remote Spy v1"] = "https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/Key/RemoteSpy",
     ["Remote Spy Lite"] = "https://raw.githubusercontent.com/KGuestCheatsJReal/ComeBack/refs/heads/main/RSPY",
@@ -1196,13 +1883,88 @@ for name, url in pairs(OldLinks) do
         end
     })
 end
+Tabs.DevLinks:AddButton({
+    Title = "🧠 Find Best Upgrade Item",
+    Callback = function()
+
+        local item, score = getBestUpgradeItem()
+
+        if item then
+            print("BEST ITEM:", item.Name)
+            print("SCORE:", score)
+            print("LEVEL:", item:FindFirstChild("Level").Value)
+            print("UPGRADE:", item:FindFirstChild("Upgrade").Value .. "/" .. item:FindFirstChild("UpgradeLimit").Value)
+        else
+            warn("No valid upgrade items found")
+        end
+    end
+})
+
+Tabs.DevLinks:AddButton({
+    Title = "🧪 Smart Upgrade Detector (TEST)",
+    Callback = function()
+
+        local plr = game:GetService("Players").LocalPlayer
+        if not plr then
+            warn("No player found")
+            return
+        end
+
+        local inv = plr:FindFirstChild("PlayerGui")
+            and plr.PlayerGui:FindFirstChild("Profile")
+            and plr.PlayerGui.Profile:FindFirstChild("Inventory")
+            and plr.PlayerGui.Profile.Inventory:FindFirstChild("Items")
+
+        if not inv then
+            warn("Inventory path not found")
+            return
+        end
+
+        local bestItem = nil
+        local bestScore = -math.huge
+
+        print("Inventory found, scanning...")
+
+        for _, item in pairs(inv:GetChildren()) do
+            local upgrade = item:FindFirstChild("Upgrade")
+            local limit = item:FindFirstChild("UpgradeLimit")
+
+            if upgrade and limit then
+                local u = tonumber(upgrade.Value or upgrade:GetAttribute("Value") or upgrade.Value)
+                local l = tonumber(limit.Value or limit:GetAttribute("Value") or limit.Value)
+
+                if u and l then
+                    local progress = u / math.max(l, 1)
+
+                    print(item.Name .. " | " .. u .. "/" .. l .. " (" .. progress .. ")")
+
+                    -- prioritize closest to max
+                    if progress > bestScore and u < l then
+                        bestScore = progress
+                        bestItem = item
+                    end
+                end
+            end
+        end
+
+        if bestItem then
+            print("BEST ITEM FOUND:", bestItem.Name, "Score:", bestScore)
+        else
+            warn("No valid upgrade items found")
+        end
+
+    end
+})
+
+
+
 
 ---------------------------------------------------------
 -- SETTINGS TAB
 ---------------------------------------------------------
-Tabs.Settings:AddSection("Server Settings")
+Tabs.Settings:AddSection("Server Settings:")
 Tabs.Settings:AddButton({
-    Title = "World Zero Reconnection ♻️",
+    Title = "♻️ World Zero Reconnection",
     Callback = function()
         Notify("Reconnecting Inproccess..", "Rejoining World Zero GameID:2727067538")
         task.wait(2)
@@ -1216,7 +1978,7 @@ Tabs.Settings:AddButton({
     end
 })
 Tabs.Settings:AddButton({
-    Title = "♻️Reload Hub (3 Second Delay)",
+    Title = "♻️ Reload Hub (3 Second Delay)",
     Callback = function()
         Notify("Destroying Current Hub", "Reloading World Zero Hub...")
         task.wait(3)
@@ -1228,14 +1990,14 @@ Tabs.Settings:AddButton({
     end
 })
 Tabs.Settings:AddButton({
-    Title = "❌Close Hub",
+    Title = "❌ Close Hub",
     Callback = function()
         Notify("Closed Hub", "Successfully closed hub")
         task.wait(1)
         Fluent:Destroy()
     end
 })
-
+Tabs.Settings:AddSection("📝 Credits:")
 Tabs.Settings:AddParagraph({
     Title = "World Zero 🚀 Hub v1.4.2",
     Content = "Made by 42Oreobun"
@@ -1245,7 +2007,7 @@ Tabs.Settings:AddParagraph({
 -- SETTINGS TAB — AUTO EXECUTE TOGGLE
 ---------------------------------------------------------
 
-Tabs.Settings:AddSection("⚙️ Script Behavior")
+Tabs.Settings:AddSection("⚙️ Script Behavior:")
 ---------------------------------------------------------
 -- SAVE MANAGER + INTERFACE MANAGER
 ---------------------------------------------------------
