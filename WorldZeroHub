@@ -62,7 +62,7 @@ task.wait(4)
 --====================================================
 
 local Window = Fluent:CreateWindow({
-    Title = "World Zero 🚀 Hub v1.4.2 |",
+    Title = "World Zero 🚀 Hub v2.4 |",
     SubTitle = "Fluent Version:  " .. Fluent.Version,
     TabWidth = 160,
     Size = UDim2.fromOffset(650, 580),
@@ -1998,7 +1998,7 @@ Tabs.Settings:AddButton({
 })
 Tabs.Settings:AddSection("📝 Credits:")
 Tabs.Settings:AddParagraph({
-    Title = "World Zero 🚀 Hub v1.4.2",
+    Title = "World Zero 🚀 Hub v2.4",
     Content = "Made by 42Oreobun"
 })
 
