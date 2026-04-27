@@ -1,7 +1,11 @@
+--====================================================
+-- SERVICES
+--====================================================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
@@ -16,21 +20,36 @@ local VIM = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 
+--====================================================
+-- GENV SETTINGS
+--====================================================
+getgenv().AutoExecHub = true
+getgenv().HubLoading = false
 
-
-getgenv().Attack = false
+-- Combat
 getgenv().autoSkills = false
-getgenv().killAura = false
+getgenv().autoMob = false
+getgenv().autoMobDetect = 0.05
 
+-- Movement
+getgenv().rotateMob = false
+getgenv().rotateRadius = 6
 
+-- World
+getgenv().autoCheckpoints = false
+getgenv().autoChests = false
+getgenv().autoSellSuggest = false
 
---// Load Fluent + Addons
+--====================================================
+-- FLUENT UI LOADER
+--====================================================
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
+
 Fluent:Notify({
     Title = "Loading Theme..",
     Content = "Proccessing Data...",
@@ -38,7 +57,10 @@ Fluent:Notify({
 })
 task.wait(4)
 
---// Window
+--====================================================
+-- FLUENT WINDOW
+--====================================================
+
 local Window = Fluent:CreateWindow({
     Title = "World Zero 🚀 Hub v1.4.2 |",
     SubTitle = "Fluent Version:  " .. Fluent.Version,
@@ -49,7 +71,6 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
---// Tabs
 local Tabs = {
     Main = Window:AddTab({ Title = "Main Terminal 🖥️", Icon = "database" }),
     Combat = Window:AddTab({ Title = "Combat Terminal 🛡️", Icon = "swords" }),
@@ -64,7 +85,10 @@ local Tabs = {
 
 local Options = Fluent.Options
 
---// Notification Wrapper
+--====================================================
+-- UTILITIES
+--====================================================
+
 local function Notify(title, content)
     Fluent:Notify({
         Title = title,
@@ -73,7 +97,6 @@ local function Notify(title, content)
     })
 end
 
---// Safe Loader
 local function safeLoad(url, name)
     local ok, result = pcall(function()
         return loadstring(game:HttpGet(url))()
@@ -84,7 +107,34 @@ local function safeLoad(url, name)
     end
 end
 
--- Noclip Logic
+local function restoreHumanoid()
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+    if hum then
+        hum:ChangeState(Enum.HumanoidStateType.Running)
+        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+end
+
+local function pressKey(key)
+    VIM:SendKeyEvent(true, key, false, game)
+    VIM:SendKeyEvent(false, key, false, game)
+end
+
+local function QueueHub()
+    if queue_on_teleport then
+        queue_on_teleport([[
+            task.wait(2)
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WorldZeroHub"))()
+        ]])
+    end
+end
+
+--====================================================
+-- MOVEMENT SYSTEM
+--====================================================
+
 local noclipEnabled = false
 
 player.CharacterAdded:Connect(function(char)
@@ -105,7 +155,6 @@ function SetNoclip(state)
     noclipEnabled = state
 end
 
--- Keep WalkSpeed applied even after respawn
 RunService.Heartbeat:Connect(function()
     if Options.WalkSpeed then
         local char = player.Character
@@ -118,7 +167,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- WalkSpeed Logic
 local function SetWalkSpeed(value)
     local character = player.Character or player.CharacterAdded:Wait()
     local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -127,7 +175,6 @@ local function SetWalkSpeed(value)
     end
 end
 
--- Jump Height Logic
 local function SetJumpHeight(value)
     local character = player.Character or player.CharacterAdded:Wait()
     local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -137,14 +184,16 @@ local function SetJumpHeight(value)
     end
 end
 
--- ESP Logic (Safe Highlight + Name ESP)
+--====================================================
+-- PLAYER ESP SYSTEM
+--====================================================
+
 local espEnabled = false
 local nameEspEnabled = false
 
 local function applyESPToCharacter(character, plr)
     if not character or not plr then return end
 
-    -- Highlight
     local highlight = workspace:FindFirstChild("FluentESP_" .. plr.UserId)
     if not highlight then
         highlight = Instance.new("Highlight")
@@ -157,7 +206,6 @@ local function applyESPToCharacter(character, plr)
 
     highlight.Enabled = espEnabled
 
-    -- Name ESP
     local head = character:FindFirstChild("Head")
     if head then
         local tag = head:FindFirstChild("FluentESP_Name")
@@ -210,7 +258,6 @@ function SetNameESP(state)
     updateAllESP()
 end
 
--- Distance ESP updater
 RunService.RenderStepped:Connect(function()
     if not nameEspEnabled then return end
 
@@ -236,7 +283,10 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Egg ESP
+--====================================================
+-- EGG ESP SYSTEM
+--====================================================
+
 local EggDropdown -- forward declare
 
 local eggEspEnabled = false
@@ -325,7 +375,10 @@ local function ApplyGoldenEggESP()
     goldenEggEspObject = highlight
 end
 
--- Mob ESP (safe for places without Mobs)
+--====================================================
+-- MOB ESP SYSTEM
+--====================================================
+
 local mobEspEnabled = false
 local mobNameEspEnabled = false
 local mobEspObjects = {}
@@ -411,7 +464,9 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-
+--====================================================
+-- AUTO ATTACK / CLICK LOOP
+--====================================================
 
 local function clickLoop()
     task.spawn(function()
@@ -430,6 +485,10 @@ local function setKill(state)
     end
 end
 
+--====================================================
+-- AUTO SKILLS SYSTEM
+--====================================================
+
 local skillThread = nil
 
 local skills = {
@@ -439,11 +498,6 @@ local skills = {
     {key = Enum.KeyCode.X,   delay = 60.0, lastUsed = 0},
     {key = Enum.KeyCode.One, delay = 1.0,  lastUsed = 0},
 }
-
-local function pressKey(key)
-    VIM:SendKeyEvent(true, key, false, game)
-    VIM:SendKeyEvent(false, key, false, game)
-end
 
 local function SkillLoop()
     if skillThread then return end
@@ -466,33 +520,16 @@ local function SkillLoop()
     end)
 end
 
-
 local function SkillKill(state)
     getgenv().kill = state
     if state then
         SkillLoop()
     end
-end -- ← THIS WAS MISSING
-
---====================================================
--- HUMANOID RESTORE (GLOBAL FIX)
---====================================================
-local function restoreHumanoid()
-    local char = player.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-
-    if hum then
-        hum:ChangeState(Enum.HumanoidStateType.Running)
-        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-    end
 end
 
 --====================================================
--- AUTO MOB SYSTEM (FULLY FIXED)
+-- AUTO MOB SYSTEM
 --====================================================
-
-getgenv().autoMob = false
-getgenv().rotateMob = false
 
 local mobThread = nil
 
@@ -538,8 +575,8 @@ local function startMobLoop()
                     local targetPos
 
                     if getgenv().rotateMob then
-                        local angle = tick() * 2
-                        local radius = 6
+                        local angle = tick() * getgenv().rotateSpeed
+                        local radius = getgenv().rotateRadius
 
                         targetPos = mob.Position + Vector3.new(
                             math.cos(angle) * radius,
@@ -550,39 +587,33 @@ local function startMobLoop()
                         targetPos = mob.Position + Vector3.new(0, 3, 4)
                     end
 
-                    -- LOCK PLAYER MOVEMENT
                     hum:ChangeState(Enum.HumanoidStateType.Physics)
                     hrp.AssemblyLinearVelocity = Vector3.zero
                     hrp.AssemblyAngularVelocity = Vector3.zero
 
-                    -- MOVE + FACE
                     hrp.CFrame = CFrame.new(targetPos)
                     hrp.CFrame = CFrame.lookAt(hrp.Position, mob.Position)
 
-                    -- AUTO ATTACK
                     pcall(function()
                         ReplicatedStorage.Remotes.ItemUsed:FireServer("Attack")
                     end)
                 end
             end
 
-            task.wait(0.05)
+            task.wait(getgenv().autoMobDetect)
         end
 
-        -- CLEAN EXIT
         mobThread = nil
         restoreHumanoid()
     end)
 end
 
 --====================================================
--- CHECKPOINT AUTO-TOUCH SYSTEM (FULLY FIXED)
+-- CHECKPOINT AUTO-TOUCH SYSTEM
 --====================================================
 
-getgenv().autoCheckpoints = false
 local checkpointThread = nil
 
--- Recursively find any BasePart with TouchInterest
 local function findCheckpointPart(obj)
     if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
         return obj
@@ -602,11 +633,22 @@ local function startCheckpointLoop()
             local missionObjects = workspace:FindFirstChild("MissionObjects")
             local checkpointsFolder = missionObjects and missionObjects:FindFirstChild("Checkpoints")
 
-            if checkpointsFolder then
-                local char = player.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
-                if hrp then
+            if hrp and missionObjects then
+                local missionStart = missionObjects:FindFirstChild("MissionStart")
+                local startPart = missionStart and missionStart:FindFirstChild("Collider")
+
+                if startPart and startPart:FindFirstChild("TouchInterest") then
+                    pcall(function()
+                        firetouchinterest(hrp, startPart, 0)
+                        task.wait()
+                        firetouchinterest(hrp, startPart, 1)
+                    end)
+                end
+
+                if checkpointsFolder then
                     for _, checkpoint in ipairs(checkpointsFolder:GetChildren()) do
                         local part = findCheckpointPart(checkpoint)
 
@@ -624,7 +666,6 @@ local function startCheckpointLoop()
             task.wait(5)
         end
 
-        -- CLEAN EXIT
         checkpointThread = nil
         restoreHumanoid()
     end)
@@ -634,13 +675,11 @@ end
 -- AUTO CHEST OPENER
 --====================================================
 
-getgenv().autoChests = false
 local chestThread = nil
 
 local function tapChest(btn)
     if not btn then return end
 
-    -- Try all safe activation methods
     pcall(function()
         btn:Activate()
     end)
@@ -674,12 +713,17 @@ local function startChestLoop()
                 end
             end
 
-            task.wait(1) -- check every second
+            task.wait(1)
         end
 
         chestThread = nil
     end)
 end
+
+--====================================================
+-- INVENTORY ANALYZER
+--====================================================
+
 local function getBestUpgradeItem()
     local itemsFolder = player.PlayerGui.Profile.Inventory.Items
 
@@ -687,23 +731,18 @@ local function getBestUpgradeItem()
     local bestScore = -math.huge
 
     for _, item in ipairs(itemsFolder:GetChildren()) do
-
         local upgrade = item:FindFirstChild("Upgrade")
         local limit = item:FindFirstChild("UpgradeLimit")
         local level = item:FindFirstChild("Level")
 
         if upgrade and limit and level then
-
             local remaining = limit.Value - upgrade.Value
 
-            -- Ignore maxed items
             if remaining > 0 then
-
                 local score =
-                    level.Value * 1.5 +   -- base power
-                    remaining * 25        -- upgrade potential weight
+                    level.Value * 1.5 +
+                    remaining * 25
 
-                -- optional perk bonus
                 if item:FindFirstChild("Perk1") then
                     score += 10
                 end
@@ -728,7 +767,6 @@ local function getBestUpgradeItem()
 end
 
 local function getScoreData(ratio, results)
-
     results.stats.total = (results.stats.total or 0) + 1
 
     if ratio >= 0.95 then
@@ -769,7 +807,6 @@ local function getScoreData(ratio, results)
     end
 end
 
-
 local function analyzeInventory(playerEquip)
     local slots = {"Armor", "Primary", "Offhand"}
 
@@ -789,13 +826,11 @@ local function analyzeInventory(playerEquip)
         }
     }
 
-
     for _, slotName in ipairs(slots) do
         local slot = playerEquip:FindFirstChild(slotName)
 
         if slot then
             for _, item in ipairs(slot:GetChildren()) do
-
                 local upgrade = item:FindFirstChild("Upgrade")
                 local limit = item:FindFirstChild("UpgradeLimit")
 
@@ -807,7 +842,6 @@ local function analyzeInventory(playerEquip)
                         local ratio = u / math.max(l, 1)
 
                         local rankText, category = getScoreData(ratio, results)
-
 
                         local entry = {
                             name = item.Name,
@@ -829,14 +863,10 @@ local function analyzeInventory(playerEquip)
 end
 
 local function printSummary(results)
-
     local stats = results.stats
 
-    local sellCount =
-        (results.sell and #results.sell) or 0
-
-    local keepCount =
-        (results.keep and #results.keep) or 0
+    local sellCount = (results.sell and #results.sell) or 0
+    local keepCount = (results.keep and #results.keep) or 0
 
     Notify(
         "📊 FULL INVENTORY INTELLIGENCE REPORT",
@@ -861,9 +891,6 @@ local function printSummary(results)
     )
 end
 
-
-
-getgenv().autoSellSuggest = false
 getgenv().lastInventoryScan = nil
 
 local function getEquippedItems(playerEquip)
@@ -888,18 +915,19 @@ local function getWorldTeleportFolder()
     local menuRings = workspace:FindFirstChild("MenuRings")
     if not menuRings then return nil end
 
-    -- try BOTH possible names
     return menuRings:FindFirstChild("World_Teleport")
         or menuRings:FindFirstChild("Teleport")
 end
 
----------------------------------------------------------
--- SCRIPT END ^^^^^^ NOTHGING BETWEEN vvvvvv
----------------------------------------------------------
----------------------------------------------------------
--- MAIN TAB (your section stays clean)
----------------------------------------------------------
+
+
+
+--====================================================
+-- MAIN TAB UI
+--====================================================
+
 Tabs.Main:AddSection("🔮 Misc:")
+
 local chestToggle = Tabs.Main:AddToggle("AutoChests", {
     Title = "🎁 Auto Open Mission Chests",
     Default = false,
@@ -911,14 +939,12 @@ local chestToggle = Tabs.Main:AddToggle("AutoChests", {
     end
 })
 
-
--- PROMO CODE INPUT
 local PromoInput = Tabs.Main:AddInput("PromoInput", {
     Title = "Promo Code",
     Default = "",
     Placeholder = "Enter Promo Code...",
     Numeric = false,
-    Finished = false, -- if true, only triggers on Enter
+    Finished = false,
     Callback = function(Value)
         print("Promo code typed:", Value)
     end
@@ -946,7 +972,6 @@ Tabs.Main:AddButton({
             .RedeemCode
 
         remote:InvokeServer("RedeemCode", code)
-
     end
 })
 
@@ -979,7 +1004,7 @@ local skillToggle = Tabs.Combat:AddToggle("SkillToggle", {
 })
 -- Auto Move to Mob (Six)
 local mobMoveToggle = Tabs.Combat:AddToggle("AutoMobMove", {
-    Title = "⚔️ Auto Move to Mob | ⬇️  Keybind: [ Five ] \n(Do Not Need To Click This Use Keybind)⚠️",
+    Title = "🧠 Auto Mob Detection | ⬇️  Keybind: [ Five ] \n(Do Not Need To Click This Use Keybind)⚠️",
     Default = false,
     Callback = function(state)
         getgenv().autoMob = state
@@ -992,14 +1017,49 @@ local mobMoveToggle = Tabs.Combat:AddToggle("AutoMobMove", {
     end
 
 })
+Tabs.Combat:AddSlider("MobDetectSpeedSlider", {
+    Title = "🧠 Mob Detection Speed",
+    Min = 0.01,
+    Max = 0.1,
+    Default = 0.01,
+    Rounding = 2,
+
+    Callback = function(Value)
+        getgenv().mobDetectSpeed = Value
+    end
+})
+
 -- Circle Around Mob (Seven)
 local rotateToggle = Tabs.Combat:AddToggle("RotateMob", {
     Title = "⭕ Circle Around Mob | ⬇️  Keybind: [ Six ] \n(Do Not Need To Click This Use Keybind)⚠️",
-    Default = false,
+    Default = true,
     Callback = function(state)
         getgenv().rotateMob = state
     end
 })
+Tabs.Combat:AddSlider("RotateSpeed", {
+    Title = "⭕ Rotation Speed",
+    Description = "How fast you circle mobs",
+    Default = 2,
+    Min = 1,
+    Max = 5,
+    Rounding = 1,
+    Callback = function(value)
+        getgenv().rotateSpeed = value
+    end
+})
+Tabs.Combat:AddSlider("RotateRadius", {
+    Title = "⭕ Rotate Distance",
+    Description = "Distance from mob while circling",
+    Default = 6,
+    Min = 6,
+    Max = 20,
+    Rounding = 0,
+    Callback = function(value)
+        getgenv().rotateRadius = value
+    end
+})
+
 Tabs.Combat:AddSection("🐲 Auto Dungeon Progession:")
 -- Auto Move to Mob
 
@@ -1017,7 +1077,6 @@ local checkpointsToggle = Tabs.Combat:AddToggle("autoCheckpoints", {
         end
     end
 })
-
 
 
 Tabs.Combat:AddSection("⚔️ Combat Keybinds:")
@@ -1050,17 +1109,17 @@ local skillKeybind = Tabs.Combat:AddKeybind("SkillKeybind", {
     end
 })
 local mobMoveKeybind = Tabs.Combat:AddKeybind("AutoMobMoveKeybind", {
-    Title = "⚔️ Auto Move Keybind",
+    Title = "🧠 Auto Move Keybind",
     Mode = "Toggle",
     Default = "Five",
 
     Callback = function(Value)
         mobMoveToggle:SetValue(Value)
-        mobMoveToggle:SetTitle("⚔️Auto Move to Mob | ⬇️  Keybind: [ " .. tostring(Value) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
+        mobMoveToggle:SetTitle("🧠 Auto Move to Mob | ⬇️  Keybind: [ " .. tostring(Value) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
     end,
 
     ChangedCallback = function(New)
-        mobMoveToggle:SetTitle("⚔️Auto Move to Mob | ⬇️  Keybind: [ " .. tostring(New) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
+        mobMoveToggle:SetTitle("🧠 Auto Move to Mob | ⬇️  Keybind: [ " .. tostring(New) .. " ] \n(Do Not Need To Click This Use Keybind)⚠️")
     end
 })
 
@@ -1081,6 +1140,7 @@ local rotateKeybind = Tabs.Combat:AddKeybind("RotateMobKeybind", {
 
 
 
+
 KillKeybind:OnClick(function()
     print("Kill keybind clicked:", KillKeybind:GetState())
 end)
@@ -1097,7 +1157,7 @@ Tabs.Teles:AddSection("World Teleports🛫")
 Tabs.Teles:AddButton({
     Title = "🛫World Teleports (Auto Detect)",
     Callback = function()
-
+        
         local folder = getWorldTeleportFolder()
 
         if not folder then
@@ -1124,7 +1184,7 @@ Tabs.Teles:AddButton({
                 end
             end
         end
-
+        
         if nearest then
             Notify("Teleporting", "Using detected teleport system...")
 
@@ -1172,27 +1232,32 @@ for _, group in ipairs(grouped) do
         Values = group.options,
         Multi = false,
         Default = nil,
-        Callback = function(selected)
-            for _, w in ipairs(group.data) do
-                if w and w.name == selected then
-                    if w.id then
-                        Notify("Teleporting", "Teleporting to " .. w.name)
-                        task.wait(2)
-                        Notify("Destroying Current Hub", "Reloading World Zero Hub...")
-                        task.wait(3)
-                        Notify("Reloading Hub", "Reloading World Zero Hub...")
-                        task.wait(3)
-                        Fluent:Destroy()
+            Callback = function(selected)
+                for _, w in ipairs(group.data) do
+                    if w and w.name == selected then
+                        if w.id then
+                            Notify("Teleporting", "Teleporting to " .. w.name)
 
-                        ReplicatedStorage.Shared.Teleport.TeleportToHub:FireServer(w.id)
+                            task.wait(1)
 
-                        safeLoad("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WorldZeroHub", "World Zero Hub")-- UHHH
-                    else
-                        Notify("No Teleport ID", w.name .. " has no teleport ID")
+                            -- ✅ queue script BEFORE teleport
+                            QueueHub()
+
+                            Notify("Queued", "Hub will auto-load after teleport")
+
+                            task.wait(0.5)
+
+                            Fluent:Destroy()
+
+                            ReplicatedStorage.Shared.Teleport.TeleportToHub:FireServer(w.id)
+
+                        else
+                            Notify("No Teleport ID", w.name .. " has no teleport ID")
+                        end
                     end
                 end
             end
-        end
+
     })
 end
 
@@ -1966,29 +2031,33 @@ Tabs.Settings:AddSection("Server Settings:")
 Tabs.Settings:AddButton({
     Title = "♻️ World Zero Reconnection",
     Callback = function()
-        Notify("Reconnecting Inproccess..", "Rejoining World Zero GameID:2727067538")
-        task.wait(2)
-
+        Notify("Reconnecting...", "Rejoining World Zero")
+        -- ✅ queue script BEFORE teleport
+        QueueHub()
+        task.wait(1)
         TeleportService:TeleportToPlaceInstance(
             game.PlaceId,
             game.JobId,
             player
         )
-
     end
 })
 Tabs.Settings:AddButton({
-    Title = "♻️ Reload Hub (3 Second Delay)",
+    Title = "♻️ Reload Hub (5 Second Delay)",
     Callback = function()
         Notify("Destroying Current Hub", "Reloading World Zero Hub...")
-        task.wait(3)
         Notify("Reloading Hub", "Reloading World Zero Hub...")
-        task.wait(3)
+        task.wait(5)
+        -- destroy current UI
         Fluent:Destroy()
-        task.wait(2)
-        safeLoad("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WorldZeroHub", "World Zero Hub")-- UHHH
+        task.wait(0.5)
+        -- reload hub directly
+        pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/tinywolf420/World-Zero-Hub/refs/heads/main/WorldZeroHub"))()
+        end)
     end
 })
+
 Tabs.Settings:AddButton({
     Title = "❌ Close Hub",
     Callback = function()
@@ -2036,3 +2105,4 @@ Fluent:Notify({
 })
 
 SaveManager:LoadAutoloadConfig({})
+
