@@ -131,6 +131,8 @@ local function QueueHub()
     end
 end
 
+
+
 --====================================================
 -- MOVEMENT SYSTEM
 --====================================================
@@ -1948,78 +1950,6 @@ for name, url in pairs(OldLinks) do
         end
     })
 end
-Tabs.DevLinks:AddButton({
-    Title = "🧠 Find Best Upgrade Item",
-    Callback = function()
-
-        local item, score = getBestUpgradeItem()
-
-        if item then
-            print("BEST ITEM:", item.Name)
-            print("SCORE:", score)
-            print("LEVEL:", item:FindFirstChild("Level").Value)
-            print("UPGRADE:", item:FindFirstChild("Upgrade").Value .. "/" .. item:FindFirstChild("UpgradeLimit").Value)
-        else
-            warn("No valid upgrade items found")
-        end
-    end
-})
-
-Tabs.DevLinks:AddButton({
-    Title = "🧪 Smart Upgrade Detector (TEST)",
-    Callback = function()
-
-        local plr = game:GetService("Players").LocalPlayer
-        if not plr then
-            warn("No player found")
-            return
-        end
-
-        local inv = plr:FindFirstChild("PlayerGui")
-            and plr.PlayerGui:FindFirstChild("Profile")
-            and plr.PlayerGui.Profile:FindFirstChild("Inventory")
-            and plr.PlayerGui.Profile.Inventory:FindFirstChild("Items")
-
-        if not inv then
-            warn("Inventory path not found")
-            return
-        end
-
-        local bestItem = nil
-        local bestScore = -math.huge
-
-        print("Inventory found, scanning...")
-
-        for _, item in pairs(inv:GetChildren()) do
-            local upgrade = item:FindFirstChild("Upgrade")
-            local limit = item:FindFirstChild("UpgradeLimit")
-
-            if upgrade and limit then
-                local u = tonumber(upgrade.Value or upgrade:GetAttribute("Value") or upgrade.Value)
-                local l = tonumber(limit.Value or limit:GetAttribute("Value") or limit.Value)
-
-                if u and l then
-                    local progress = u / math.max(l, 1)
-
-                    print(item.Name .. " | " .. u .. "/" .. l .. " (" .. progress .. ")")
-
-                    -- prioritize closest to max
-                    if progress > bestScore and u < l then
-                        bestScore = progress
-                        bestItem = item
-                    end
-                end
-            end
-        end
-
-        if bestItem then
-            print("BEST ITEM FOUND:", bestItem.Name, "Score:", bestScore)
-        else
-            warn("No valid upgrade items found")
-        end
-
-    end
-})
 
 
 
@@ -2045,7 +1975,7 @@ Tabs.Settings:AddButton({
 Tabs.Settings:AddButton({
     Title = "♻️ Reload Hub (5 Second Delay)",
     Callback = function()
-        Notify("Destroying Current Hub", "Reloading World Zero Hub...")
+        Notify("Destroying Current Hub", "Selected For Quick Reload...")
         Notify("Reloading Hub", "Reloading World Zero Hub...")
         task.wait(5)
         -- destroy current UI
