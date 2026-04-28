@@ -1,3 +1,5 @@
+
+
 --====================================================
 -- SERVICES
 --====================================================
@@ -29,11 +31,11 @@ getgenv().HubLoading = false
 -- Combat
 getgenv().autoSkills = false
 getgenv().autoMob = false
-getgenv().autoMobDetect = 0.05
+getgenv().autoMobDetect = 0.001
 
 -- Movement
 getgenv().rotateMob = false
-getgenv().rotateRadius = 6
+getgenv().rotateRadius = 8
 
 -- World
 getgenv().autoCheckpoints = false
@@ -50,19 +52,33 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
 
+LoadingStep("Loading Fluent UI...", 0.2)
+task.wait(1)
+
+LoadingStep("Building Interface...", 0.4)
+task.wait(1)
+
+LoadingStep("Loading Theme...", 0.6)
+task.wait(1)
+
+LoadingStep("Proccessing Data...", 0.8)
+task.wait(1)
+
+LoadingStep("Hub Launching Now..", 1)
+task.wait(1)
 Fluent:Notify({
-    Title = "Loading Theme..",
+    Title = "Hub Launching Now..",
     Content = "Proccessing Data...",
     Duration = 5
 })
-task.wait(4)
+task.wait(2.5)
 
 --====================================================
 -- FLUENT WINDOW
 --====================================================
 
 local Window = Fluent:CreateWindow({
-    Title = "World Zero 🚀 Hub v2.4 |",
+    Title = "World Zero 🚀 Hub v1.4.2 |",
     SubTitle = "Fluent Version:  " .. Fluent.Version,
     TabWidth = 160,
     Size = UDim2.fromOffset(650, 580),
@@ -473,9 +489,16 @@ end)
 local function clickLoop()
     task.spawn(function()
         while getgenv().kill do
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                        -- ❌ cancel animations
+            if hum then
+                for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+                    track:Stop()
+                end
+            end
             VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
             VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-            task.wait(0.5)
+            task.wait(0.1)
         end
     end)
 end
@@ -495,9 +518,9 @@ local skillThread = nil
 
 local skills = {
     {key = Enum.KeyCode.E,   delay = 3.0,  lastUsed = 0},
-    {key = Enum.KeyCode.R,   delay = 13.0, lastUsed = 0},
-    {key = Enum.KeyCode.F,   delay = 11.0, lastUsed = 0},
-    {key = Enum.KeyCode.X,   delay = 60.0, lastUsed = 0},
+    {key = Enum.KeyCode.R,   delay = 11.0, lastUsed = 0},
+    {key = Enum.KeyCode.F,   delay = 9.0, lastUsed = 0},
+    {key = Enum.KeyCode.X,   delay = 50.0, lastUsed = 0},
     {key = Enum.KeyCode.One, delay = 1.0,  lastUsed = 0},
 }
 
@@ -535,6 +558,7 @@ end
 
 local mobThread = nil
 
+
 local function getClosestMob()
     local char = player.Character
     if not char then return nil end
@@ -565,45 +589,59 @@ local function startMobLoop()
     if mobThread then return end
 
     mobThread = task.spawn(function()
-        while getgenv().autoMob do
-            local char = player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
+       while getgenv().autoMob do
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-            if hrp and hum then
-                local mob = getClosestMob()
+        if hrp and hum then
+            local now = tick()
 
-                if mob then
-                    local targetPos
+            -- force re-check every 0.15s OR if current mob is gone
+            if not currentMob
+                or not currentMob.Parent
+                or now - lastSwitch > 0.15 then
 
-                    if getgenv().rotateMob then
-                        local angle = tick() * getgenv().rotateSpeed
-                        local radius = getgenv().rotateRadius
-
-                        targetPos = mob.Position + Vector3.new(
-                            math.cos(angle) * radius,
-                            3,
-                            math.sin(angle) * radius
-                        )
-                    else
-                        targetPos = mob.Position + Vector3.new(0, 3, 4)
-                    end
-
-                    hum:ChangeState(Enum.HumanoidStateType.Physics)
-                    hrp.AssemblyLinearVelocity = Vector3.zero
-                    hrp.AssemblyAngularVelocity = Vector3.zero
-
-                    hrp.CFrame = CFrame.new(targetPos)
-                    hrp.CFrame = CFrame.lookAt(hrp.Position, mob.Position)
-
-                    pcall(function()
-                        ReplicatedStorage.Remotes.ItemUsed:FireServer("Attack")
-                    end)
-                end
+                currentMob = getClosestMob()
+                lastSwitch = now
             end
 
-            task.wait(getgenv().autoMobDetect)
+            local mob = currentMob
+
+            if mob then
+                local targetPos
+
+                if getgenv().rotateMob then
+                    local angle = now * getgenv().rotateSpeed
+                    local radius = getgenv().rotateRadius
+
+                    targetPos = mob.Position + Vector3.new(
+                        math.cos(angle) * radius,
+                        3,
+                        math.sin(angle) * radius
+                    )
+                else
+                    targetPos = mob.Position + Vector3.new(0, 3, 4)
+                end
+
+                hum:ChangeState(Enum.HumanoidStateType.Physics)
+
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+
+                hrp.CFrame = CFrame.new(targetPos)
+                hrp.CFrame = CFrame.lookAt(hrp.Position, mob.Position)
+
+                pcall(function()
+                    ReplicatedStorage.Remotes.ItemUsed:FireServer("Attack")
+                end)
+            else
+                currentMob = nil
+            end
         end
+
+        task.wait(getgenv().autoMobDetect)
+    end
 
         mobThread = nil
         restoreHumanoid()
@@ -611,7 +649,7 @@ local function startMobLoop()
 end
 
 --====================================================
--- CHECKPOINT AUTO-TOUCH SYSTEM
+-- CHECKPOINT AUTO-TOUCH SYSTEM (UPDATED)
 --====================================================
 
 local checkpointThread = nil
@@ -627,45 +665,76 @@ local function findCheckpointPart(obj)
     return nil
 end
 
+-- 🔥 CLEAN TOUCH FUNCTION
+local function touchPart(hrp, part)
+    if part and part:IsA("BasePart") and part:FindFirstChild("TouchInterest") then
+        pcall(function()
+            firetouchinterest(hrp, part, 0)
+            task.wait()
+            firetouchinterest(hrp, part, 1)
+        end)
+    end
+end
+local function bringAndTouch(hrp, obj)
+    if not obj then return end
+
+    -- get a BasePart
+    local part = obj:IsA("BasePart") and obj
+        or obj:FindFirstChildWhichIsA("BasePart")
+
+    if not part then return end
+
+    pcall(function()
+        -- move part to player
+        part.CFrame = hrp.CFrame
+
+        -- trigger touch
+        firetouchinterest(hrp, part, 0)
+        task.wait()
+        firetouchinterest(hrp, part, 1)
+    end)
+end
+
 local function startCheckpointLoop()
     if checkpointThread then return end
 
     checkpointThread = task.spawn(function()
         while getgenv().autoCheckpoints do
             local missionObjects = workspace:FindFirstChild("MissionObjects")
-            local checkpointsFolder = missionObjects and missionObjects:FindFirstChild("Checkpoints")
 
             local char = player.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
             if hrp and missionObjects then
+
+                -- 🔹 Mission Start
                 local missionStart = missionObjects:FindFirstChild("MissionStart")
                 local startPart = missionStart and missionStart:FindFirstChild("Collider")
+                touchPart(hrp, startPart)
 
-                if startPart and startPart:FindFirstChild("TouchInterest") then
-                    pcall(function()
-                        firetouchinterest(hrp, startPart, 0)
-                        task.wait()
-                        firetouchinterest(hrp, startPart, 1)
-                    end)
-                end
+                -- 🔹 EXTRA TRIGGERS (YOUR ADDITIONS)
+                touchPart(hrp, missionObjects:FindFirstChild("CannonTrigger"))
+                touchPart(hrp, missionObjects:FindFirstChild("VineRoomTrigger"))
+                touchPart(hrp, missionObjects:FindFirstChild("CheckpointTrigger"))
+                touchPart(hrp, missionObjects:FindFirstChild("ObbyTrigger"))
+                touchPart(hrp, missionObjects:FindFirstChild("BossTrigger"))
 
+                touchPart(hrp, missionObjects:FindFirstChild("CastleTrigger"))
+                bringAndTouch(hrp, workspace:FindFirstChild("Cage1Marker"))
+                bringAndTouch(hrp, workspace:FindFirstChild("Cage2Marker"))
+
+
+                -- 🔹 CHECKPOINTS
+                local checkpointsFolder = missionObjects:FindFirstChild("Checkpoints")
                 if checkpointsFolder then
                     for _, checkpoint in ipairs(checkpointsFolder:GetChildren()) do
                         local part = findCheckpointPart(checkpoint)
-
-                        if part then
-                            pcall(function()
-                                firetouchinterest(hrp, part, 0)
-                                task.wait()
-                                firetouchinterest(hrp, part, 1)
-                            end)
-                        end
+                        touchPart(hrp, part)
                     end
                 end
             end
 
-            task.wait(5)
+            task.wait(3) -- slightly faster loop
         end
 
         checkpointThread = nil
@@ -673,54 +742,47 @@ local function startCheckpointLoop()
     end)
 end
 
+
 --====================================================
--- AUTO CHEST OPENER
+-- AUTO CHEST OPENER (FINAL FIX)
 --====================================================
 
 local chestThread = nil
-
-local function tapChest(btn)
-    if not btn then return end
-
-    pcall(function()
-        btn:Activate()
-    end)
-
-    pcall(function()
-        firesignal(btn.MouseButton1Click)
-    end)
-
-    pcall(function()
-        firesignal(btn.MouseButton1Down)
-    end)
-end
 
 local function startChestLoop()
     if chestThread then return end
 
     chestThread = task.spawn(function()
+        local remote = ReplicatedStorage:WaitForChild("Shared")
+            :WaitForChild("Chests")
+            :WaitForChild("OpenChest")
+
         while getgenv().autoChests do
-            local gui = player:WaitForChild("PlayerGui")
-            local rewards = gui:FindFirstChild("MissionRewards", true)
+            local gui = player:FindFirstChild("PlayerGui")
+            local rewards = gui and gui:FindFirstChild("MissionRewards", true)
 
-            if rewards then
-                local boxes = rewards:FindFirstChild("Boxes", true)
-
-                if boxes then
-                    for _, chest in ipairs(boxes:GetChildren()) do
-                        if chest:IsA("ImageButton") or chest:IsA("TextButton") then
-                            tapChest(chest)
-                        end
-                    end
+            -- ✅ only run when chest screen is visible
+            if rewards and rewards.Enabled then
+                -- 🔥 fire ALL chest options (1,2,3)
+                for i = 1, 3 do
+                    pcall(function()
+                        remote:FireServer(i)
+                    end)
                 end
+
+                -- wait so we don’t spam
+                task.wait(1.5)
             end
 
-            task.wait(1)
+            task.wait(0.3)
         end
 
         chestThread = nil
     end)
 end
+
+
+
 
 --====================================================
 -- INVENTORY ANALYZER
@@ -1021,9 +1083,9 @@ local mobMoveToggle = Tabs.Combat:AddToggle("AutoMobMove", {
 })
 Tabs.Combat:AddSlider("MobDetectSpeedSlider", {
     Title = "🧠 Mob Detection Speed",
-    Min = 0.01,
+    Min = 0.001,
     Max = 0.1,
-    Default = 0.01,
+    Default = 0.001,
     Rounding = 2,
 
     Callback = function(Value)
@@ -1042,9 +1104,10 @@ local rotateToggle = Tabs.Combat:AddToggle("RotateMob", {
 Tabs.Combat:AddSlider("RotateSpeed", {
     Title = "⭕ Rotation Speed",
     Description = "How fast you circle mobs",
-    Default = 2,
+
     Min = 1,
     Max = 5,
+    Default = 3,
     Rounding = 1,
     Callback = function(value)
         getgenv().rotateSpeed = value
@@ -1053,9 +1116,10 @@ Tabs.Combat:AddSlider("RotateSpeed", {
 Tabs.Combat:AddSlider("RotateRadius", {
     Title = "⭕ Rotate Distance",
     Description = "Distance from mob while circling",
-    Default = 6,
+    Default = 8,
     Min = 6,
     Max = 20,
+    Default = 8,
     Rounding = 0,
     Callback = function(value)
         getgenv().rotateRadius = value
@@ -1952,8 +2016,6 @@ for name, url in pairs(OldLinks) do
 end
 
 
-
-
 ---------------------------------------------------------
 -- SETTINGS TAB
 ---------------------------------------------------------
@@ -1998,7 +2060,7 @@ Tabs.Settings:AddButton({
 })
 Tabs.Settings:AddSection("📝 Credits:")
 Tabs.Settings:AddParagraph({
-    Title = "World Zero 🚀 Hub v2.4",
+    Title = "World Zero 🚀 Hub v1.4.2",
     Content = "Made by 42Oreobun"
 })
 
@@ -2021,7 +2083,7 @@ SaveManager:BuildConfigSection(Tabs.Settings)
 
 Window:SelectTab(1)
 
-
+--[[
 Fluent:Notify({
     Title = "Loaded successfully.",
     Content = "World Zero LauncherLoaded successfully.",
@@ -2032,7 +2094,6 @@ Fluent:Notify({
     Title = "Much Love From 42Oreobun, Thank you for the Support",
     Content = "Thank you for the Support! <3",
     Duration = 5
-})
+})]]
 
 SaveManager:LoadAutoloadConfig({})
-
