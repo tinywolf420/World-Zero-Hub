@@ -52,20 +52,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
 
-LoadingStep("Loading Fluent UI...", 0.2)
-task.wait(1)
 
-LoadingStep("Building Interface...", 0.4)
-task.wait(1)
-
-LoadingStep("Loading Theme...", 0.6)
-task.wait(1)
-
-LoadingStep("Proccessing Data...", 0.8)
-task.wait(1)
-
-LoadingStep("Hub Launching Now..", 1)
-task.wait(1)
 Fluent:Notify({
     Title = "Hub Launching Now..",
     Content = "Proccessing Data...",
